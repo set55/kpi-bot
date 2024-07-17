@@ -19,6 +19,11 @@ const (
 	// 用例发现bug率
 	CASE_BUG_RATE_STANDARD = 20
 
+	// 系数
+	TOP_COEFFICIENT = 1.2
+	SECOND_COEFFICIENT = 1.0
+	THIRD_COEFFICIENT = 0.7
+
 
 )
 
@@ -26,6 +31,8 @@ type (
 	TestKpi struct {
 		Accounts []string // test的账号
 		Db       *sql.DB  // 数据库连接
+		StartTime string  // 开始时间
+		EndTime string // 结束时间
 	}
 
 	TestKpiGrade struct {
@@ -57,16 +64,19 @@ type (
 		CaseBugRateStandardGrade float64 // 用例发现bug率实际分数
 
 		TotalGrade float64 // 总分数
+		TotalGradeStandard float64 // 总分数基数
 	}
 )
 
 
 
 // NewTestKpi 创建一个测试KPI对象
-func NewTestKpi(db *sql.DB, accounts []string) *TestKpi {
+func NewTestKpi(db *sql.DB, accounts []string, startTime, endTime string) *TestKpi {
 	return &TestKpi{
 		Accounts: accounts,
 		Db:       db,
+		StartTime: startTime,
+		EndTime: endTime,
 	}
 }
 
@@ -78,12 +88,14 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	for _, account := range l.Accounts {
 		kpiGrades[account] = TestKpiGrade{
 			Account: account,
+			StartTime: l.StartTime,
+			EndTime: l.EndTime,
 		}
 	}
 
 
 	// 测试软件项目进度达成率
-	testProgressResult := dbQuery.QueryTestProjectProgress(l.Db, l.Accounts)
+	testProgressResult := dbQuery.QueryTestProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range testProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -96,7 +108,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	}
 
 	// 测试软件项目有效bug率
-	validateBugRateResult := dbQuery.QueryTestValidBugRate(l.Db, l.Accounts)
+	validateBugRateResult := dbQuery.QueryTestValidBugRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range validateBugRateResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -109,7 +121,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	}
 
 	// bug转需求数
-	bugToStoryNumResult := dbQuery.QueryTestBugToStory(l.Db, l.Accounts)
+	bugToStoryNumResult := dbQuery.QueryTestBugToStory(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugToStoryNumResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -126,7 +138,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 
 
 	// 用例发现bug率
-	caseBugRateResult := dbQuery.QueryTestBugCaseRate(l.Db, l.Accounts)
+	caseBugRateResult := dbQuery.QueryTestBugCaseRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range caseBugRateResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -138,5 +150,26 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 		}
 	}
 
+	// 结算系数
+	for account, kpiGrade := range kpiGrades {
+		tmp := kpiGrades[account]
+		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
+		kpiGrades[account] = tmp
+	}
+
+
+
 	return kpiGrades
+}
+
+// 计算得分系数
+func (l *TestKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
+	if totalGrade >= 100 {
+		return TOP_COEFFICIENT
+	} else if totalGrade < 100 && totalGrade >= 80 {
+		return SECOND_COEFFICIENT
+	} else if totalGrade < 80 && totalGrade >= 60 {
+		return THIRD_COEFFICIENT
+	}
+	return 0
 }

@@ -31,6 +31,8 @@ type (
 	RdKpi struct {
 		Accounts []string // rd的账号
 		Db       *sql.DB  // 数据库连接
+		StartTime string // 开始时间
+		EndTime   string // 结束时间
 	}
 
 	RdKpiGrade struct {
@@ -105,10 +107,12 @@ type (
 )
 
 // NewRdKpi 创建一个研发KPI对象
-func NewRdKpi(db *sql.DB, accounts []string) *RdKpi {
+func NewRdKpi(db *sql.DB, accounts []string, startTime, endTime string) *RdKpi {
 	return &RdKpi{
 		Accounts: accounts,
 		Db:       db,
+		StartTime: startTime,
+		EndTime: endTime,
 	}
 }
 
@@ -120,11 +124,13 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	for _, account := range l.Accounts {
 		kpiGrades[account] = RdKpiGrade{
 			Account: account,
+			StartTime: l.StartTime,
+			EndTime: l.EndTime,
 		}
 	}
 
 	// 项目进度达成率
-	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts)
+	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -137,7 +143,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 项目进度完成情况
-	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts)
+	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectProgressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -155,7 +161,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 需求达成率
-	storyScoreResult := dbQuery.QueryRdStoryScore(l.Db, l.Accounts)
+	storyScoreResult := dbQuery.QueryRdStoryScore(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyScoreResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -170,7 +176,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 需求完成情况
-	storyDetailResult := dbQuery.QueryRdStoryDetail(l.Db, l.Accounts)
+	storyDetailResult := dbQuery.QueryRdStoryDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -188,7 +194,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 项目版本bug遗留率情况 有测试报告
-	bugCarryOverResult := dbQuery.QueryRdBugCarryOver(l.Db, l.Accounts)
+	bugCarryOverResult := dbQuery.QueryRdBugCarryOver(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryOverResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -201,7 +207,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 項目版本bug遗留實際情況 有测试报告
-	bugCarryDetailResult := dbQuery.QueryRdBugCarryOverDetail(l.Db, l.Accounts)
+	bugCarryDetailResult := dbQuery.QueryRdBugCarryOverDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -223,7 +229,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 
 
 	// 工时预估达成比
-	timeEstimateRateResult := dbQuery.QueryRdTimeEstimateRate(l.Db, l.Accounts)
+	timeEstimateRateResult := dbQuery.QueryRdTimeEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range timeEstimateRateResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -236,7 +242,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 版本发版次数平均发版次数
-	pubTimesResult := dbQuery.QueryRdPubTimes(l.Db, l.Accounts)
+	pubTimesResult := dbQuery.QueryRdPubTimes(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range pubTimesResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -249,7 +255,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 版本发版次数详情
-	pubTimesDetailResult := dbQuery.QueryRdPubTimesDetail(l.Db, l.Accounts)
+	pubTimesDetailResult := dbQuery.QueryRdPubTimesDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range pubTimesDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]

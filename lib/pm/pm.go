@@ -21,12 +21,19 @@ const (
 
 	// 预估承诺完成率 分值
 	PROJECT_ESTIMATE_STANDARD = 10
+
+	// 系数
+	TOP_COEFFICIENT = 1.2
+	SECOND_COEFFICIENT = 1.0
+	THIRD_COEFFICIENT = 0.7
 )
 
 type (
 	PmKpi struct {
 		Accounts []string // pm的账号
 		Db       *sql.DB  // 数据库连接
+		StartTime string // 开始时间
+		EndTime string // 结束时间
 	}
 
 	PmKpiGrade struct {
@@ -60,6 +67,7 @@ type (
 		PromiseStandardGrade float64 // 预估承诺完成率实际分数
 
 		TotalGrade float64 // 总分数
+		TotalGradeStandard float64 // 总分数基数
 
 	}
 
@@ -69,10 +77,12 @@ type (
 	}
 )
 // NewPmKpi creates a new PmKpi object
-func NewPmKpi(db *sql.DB, accounts []string) *PmKpi {
+func NewPmKpi(db *sql.DB, accounts []string, startTime, endTime string) *PmKpi {
 	return &PmKpi{
 		Accounts: accounts,
 		Db:       db,
+		StartTime: startTime,
+		EndTime: endTime,
 	}
 }
 
@@ -85,11 +95,13 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	for _, account := range l.Accounts {
 		kpiGrades[account] = PmKpiGrade{
 			Account: account,
+			StartTime: l.StartTime,
+			EndTime: l.EndTime,
 		}
 	}
 
 	// 项目软件项目进度达成率
-	progressResult := dbQuery.QueryProjectProgress(l.Db, l.Accounts)
+	progressResult := dbQuery.QueryProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range progressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -102,7 +114,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目成果完成率
-	completeRateResult := dbQuery.QueryProjectCompleteRate(l.Db, l.Accounts)
+	completeRateResult := dbQuery.QueryProjectCompleteRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range completeRateResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -115,7 +127,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目成果完成率,完成情况
-	completeRateDetailResult := dbQuery.QueryProjectCompleteRateDetail(l.Db, l.Accounts)
+	completeRateDetailResult := dbQuery.QueryProjectCompleteRateDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range completeRateDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -130,7 +142,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目规划需求数
-	storyNumResult := dbQuery.QueryProjectStoryNum(l.Db, l.Accounts)
+	storyNumResult := dbQuery.QueryProjectStoryNum(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyNumResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -158,7 +170,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 预估承诺完成率
-	projectPromiseResult := dbQuery.QueryProjectEstimateRate(l.Db, l.Accounts)
+	projectPromiseResult := dbQuery.QueryProjectEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectPromiseResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -169,6 +181,26 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 			kpiGrades[account] = tmp
 		}
 	}
+	
+	for account, kpiGrade := range kpiGrades {
+		tmp := kpiGrades[account]
+		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
+		kpiGrades[account] = tmp
+	}
+
 
 	return kpiGrades
+}
+
+
+// 计算得分系数
+func (l *PmKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
+	if totalGrade >= 100 {
+		return TOP_COEFFICIENT
+	} else if totalGrade < 100 && totalGrade >= 80 {
+		return SECOND_COEFFICIENT
+	} else if totalGrade < 80 && totalGrade >= 60 {
+		return THIRD_COEFFICIENT
+	}
+	return 0
 }

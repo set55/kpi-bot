@@ -23,6 +23,8 @@ type (
 	RdWithoutTestReportKpi struct {
 		Accounts []string // rd的账号
 		Db       *sql.DB  // 数据库连接
+		StartTime string
+		EndTime string
 	}
 
 	RdWithoutTestReportKpiGrade struct {
@@ -53,6 +55,7 @@ type (
 		TimeEstimateStandardGrade float64 // 工时预估实际分数
 
 		TotalGrade float64 // 总分数
+		TotalGradeStandard float64 // 总分数基数
 	}
 
 	BugCarryInfoWithoutTestReport struct {
@@ -66,10 +69,12 @@ type (
 )
 
 // NewRdKpi 创建一个研发KPI对象
-func NewRdKpiWithoutTestReport(db *sql.DB, accounts []string) *RdWithoutTestReportKpi {
+func NewRdKpiWithoutTestReport(db *sql.DB, accounts []string, startTime, endTime string) *RdWithoutTestReportKpi {
 	return &RdWithoutTestReportKpi{
 		Accounts: accounts,
 		Db:       db,
+		StartTime: startTime,
+		EndTime: endTime,
 	}
 }
 
@@ -81,11 +86,13 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	for _, account := range l.Accounts {
 		kpiGrades[account] = RdWithoutTestReportKpiGrade{
 			Account: account,
+			StartTime: l.StartTime,
+			EndTime: l.EndTime,
 		}
 	}
 
 	// 项目进度达成率
-	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts)
+	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -98,7 +105,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 项目进度完成情况
-	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts)
+	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectProgressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -116,7 +123,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 需求达成率
-	storyScoreResult := dbQuery.QueryRdStoryScore(l.Db, l.Accounts)
+	storyScoreResult := dbQuery.QueryRdStoryScore(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyScoreResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -131,7 +138,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 需求完成情况
-	storyDetailResult := dbQuery.QueryRdStoryDetail(l.Db, l.Accounts)
+	storyDetailResult := dbQuery.QueryRdStoryDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -149,7 +156,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 项目版本bug遗留率情况 无测试报告
-	bugCarryOverResult := dbQuery.QueryRdBugCarryOverWithoutTestReport(l.Db, l.Accounts)
+	bugCarryOverResult := dbQuery.QueryRdBugCarryOverWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryOverResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -162,7 +169,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 項目版本bug遗留實際情況 无测试报告
-	bugCarryDetailResult := dbQuery.QueryRdBugCarryOverDetailWithoutTestReport(l.Db, l.Accounts)
+	bugCarryDetailResult := dbQuery.QueryRdBugCarryOverDetailWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -184,7 +191,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 
 
 	// 工时预估达成比
-	timeEstimateRateResult := dbQuery.QueryRdTimeEstimateRate(l.Db, l.Accounts)
+	timeEstimateRateResult := dbQuery.QueryRdTimeEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range timeEstimateRateResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -196,5 +203,24 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 		}
 	}
 
+	// 结算系数
+	for account, kpiGrade := range kpiGrades {
+		tmp := kpiGrades[account]
+		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
+		kpiGrades[account] = tmp
+	}
+
 	return kpiGrades
+}
+
+// 计算得分系数
+func (l *RdWithoutTestReportKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
+	if totalGrade >= 100 {
+		return TOP_COEFFICIENT
+	} else if totalGrade < 100 && totalGrade >= 80 {
+		return SECOND_COEFFICIENT
+	} else if totalGrade < 80 && totalGrade >= 60 {
+		return THIRD_COEFFICIENT
+	}
+	return 0
 }

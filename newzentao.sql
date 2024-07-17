@@ -21,6 +21,23 @@ order by a.account,c.realEnd desc
 ) tmp
 group by account
 
+select tmp.account, AVG(tmp.diff_expect) as avg_diff_expect,
+case when AVG(tmp.diff_expect) <= -5 then 1.2
+		when AVG(tmp.diff_expect) > -5 and AVG(tmp.diff_expect) <= 0 then 1.0
+		when AVG(tmp.diff_expect) > 0 and AVG(tmp.diff_expect) <= 2 then 0.8
+		when AVG(tmp.diff_expect) > 2 and AVG(tmp.diff_expect) <= 4 then 0.6
+		when AVG(tmp.diff_expect) > 4 and AVG(tmp.diff_expect) <= 6 then 0.5
+		else 0 end as avg_diff_expect_standard
+from (
+select a.account,c.name ,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_expect
+from zt_user a 
+inner join zt_team b on b.account = a.account 
+inner join zt_project c on c.type in("project","sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private")
+where a.account in ("set.su","paul.gao","justin.lee","samy.gou","champion.fu","alan.tin","shiwen.tin") and c.realEnd between "2024-07-01 00:00:00" and "2024-07-31 23:59:59"
+order by a.account,c.realEnd desc
+) tmp
+group by account
+
 
 --软件研发项目进度达成率-完成情况--
 select a.account, d.name as project_name ,c.name as project_sprint_name,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_day
