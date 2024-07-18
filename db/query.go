@@ -163,17 +163,20 @@ func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime st
 	results := map[string]QueryRdProjectProgressResult{}
 	sqlCmd := fmt.Sprintf(`
 		select tmp.account, AVG(tmp.diff_expect) as avg_diff_expect, 
-		case when AVG(tmp.diff_expect) <= -5 then 1.2
-		when AVG(tmp.diff_expect) > -5 and AVG(tmp.diff_expect) <= 0 then 1.0
+		case 
+		when AVG(tmp.diff_expect) <= -8 then 1.8
+		when AVG(tmp.diff_expect) > -8 and AVG(tmp.diff_expect) <= -6 then 1.5
+		when AVG(tmp.diff_expect) > -6 and AVG(tmp.diff_expect) <= -3 then 1.2
+		when AVG(tmp.diff_expect) > -3 and AVG(tmp.diff_expect) <= 0 then 1.0
 		when AVG(tmp.diff_expect) > 0 and AVG(tmp.diff_expect) <= 2 then 0.8
 		when AVG(tmp.diff_expect) > 2 and AVG(tmp.diff_expect) <= 4 then 0.6
 		when AVG(tmp.diff_expect) > 4 and AVG(tmp.diff_expect) <= 6 then 0.5
 		else 0 end as avg_diff_expect_standard
 		from (
-		select a.account,c.name ,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.realEnd,c.end) as diff_expect
+		select a.account,c.name ,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_expect
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
-		inner join zt_project c on c.type in("project","sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private")
+		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private")
 		where a.account in (%s) and c.realEnd between "%s" and "%s"
 		order by a.account,c.realEnd desc
 		) tmp
@@ -209,11 +212,10 @@ func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime st
 func QueryRdProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryRdProjectProgressDetailResult {
 	results := map[string][]QueryRdProjectProgressDetailResult{}
 	sqlCmd := fmt.Sprintf(`
-		select a.account, d.name as project_name ,c.name as project_sprint_name,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_day
+		select a.account, c.project as project_name ,c.name as project_sprint_name,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_day
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
 		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private")
-		left join zt_project d on d.id = c.project
 		where a.account in (%s) and c.realEnd between "%s" and "%s"
 		order by a.account,c.realEnd desc
 	`, common.AccountArrayToString(accounts), startTime, endTime)
@@ -334,10 +336,10 @@ func QueryRdBugCarryOver(db *sql.DB, accounts []string, startTime, endTime strin
 	results := map[string]QueryRdBugCarryOverResult{}
 	sqlCmd := fmt.Sprintf(`
 		select account ,AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) as bug_carry_over_rate,
-		case when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) = 0 then "1.2"
-			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.1 then "1.0"
-			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.2 then "0.9"
-			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.3 then "0.8"
+		case when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) = 0 then "1.0"
+			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.1 then "0.9"
+			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.2 then "0.8"
+			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.3 then "0.7"
 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.4 then "0.6"
 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.5 then "0.5"
 			else "0" end as bug_carry_over_rate_standard
@@ -421,9 +423,11 @@ func QueryRdBugCarryOverWithoutTestReport(db *sql.DB, accounts []string, startTi
 	results := map[string]QueryRdBugCarryOverResult{}
 	sqlCmd := fmt.Sprintf(`
 		select account ,AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) as bug_carry_over_rate,
-		case when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) = 0 then "1.2"
-			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.1 then "1.0"
+		case when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) = 0 then "1.0"
+			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.1 then "0.9"
 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.2 then "0.8"
+			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.3 then "0.7"
+			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.4 then "0.6"
 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.5 then "0.5"
 			else "0" end as bug_carry_over_rate_standard
 		from ( 
@@ -506,12 +510,11 @@ func QueryRdTimeEstimateRate(db *sql.DB, accounts []string, startTime, endTime s
 	results := map[string]QueryRdTimeEstimateRateResult{}
 	sqlCmd := fmt.Sprintf(`
 		select a.account,AVG(b.consumed/b.estimate) as time_estimate_rate,
-		case when AVG(b.consumed/b.estimate) <= 0.8 then "1.2"
-			when AVG(b.consumed/b.estimate) > 0.8 and AVG(b.consumed/b.estimate) <= 1 then "1.0"
+		case when AVG(b.consumed/b.estimate) <= 1 then "1.0"
 			when AVG(b.consumed/b.estimate) > 1 and AVG(b.consumed/b.estimate) <= 1.2 then "0.8"
 			when AVG(b.consumed/b.estimate) > 1.2 and AVG(b.consumed/b.estimate) <= 1.4 then "0.6"
 			when AVG(b.consumed/b.estimate) > 1.4 and AVG(b.consumed/b.estimate) <= 1.6 then "0.4"
-			else "0" end as time_estimate_level
+			else "0.5" end as time_estimate_level
 		from zt_user a 
 		inner join zt_task b on b.finishedDate between "%s" and "%s" and b.finishedBy=a.account and b.deleted="0" and b.parent=0 
 		where a.account in (%s) 
@@ -548,11 +551,9 @@ func QueryRdPubTimes(db *sql.DB, accounts []string, startTime, endTime string) m
 	results := map[string]QueryRdPubTimesResult{}
 	sqlCmd := fmt.Sprintf(`
 		select tmp2.account, AVG(tmp2.pub_times) as pub_times, 
-		case when AVG(tmp2.pub_times) > 0 and AVG(tmp2.pub_times) <= 1 then 1.2
-			when AVG(tmp2.pub_times) > 1 and AVG(tmp2.pub_times) <= 2 then 1.0
-			when AVG(tmp2.pub_times) > 2 and AVG(tmp2.pub_times) <= 3 then 0.8
-			when AVG(tmp2.pub_times) > 3 and AVG(tmp2.pub_times) <= 4 then 0.6
-			when AVG(tmp2.pub_times) > 4 and AVG(tmp2.pub_times) <= 5 then 0.5
+		case when AVG(tmp2.pub_times) > 0 and AVG(tmp2.pub_times) <= 2 then 1.0
+			when AVG(tmp2.pub_times) > 2 and AVG(tmp2.pub_times) <= 4 then 0.8
+			when AVG(tmp2.pub_times) > 4 and AVG(tmp2.pub_times) <= 6 then 0.4
 			else 0 end as pub_times_level
 		from
 		(
@@ -640,7 +641,10 @@ func QueryTestProjectProgress(db *sql.DB, accounts []string, startTime, endTime 
 	results := map[string]QueryTestProjectProgressResult{}
 	sqlCmd := fmt.Sprintf(`
 		select tmp.account,AVG(tmp.diff_days) as avg_diff_days,
-		case when AVG(tmp.diff_days) <= -3 then "1.2"
+		case 
+			when AVG(tmp.diff_days) <= -8 then 1.8
+			when AVG(tmp.diff_days) > -8 and AVG(tmp.diff_days) <= -6 then 1.5
+			when AVG(tmp.diff_days) > -6 and AVG(tmp.diff_days) <= -3 then 1.2
 			when AVG(tmp.diff_days) > -3 and AVG(tmp.diff_days) <= 0 then "1.0"
 			when AVG(tmp.diff_days) > 0 and AVG(tmp.diff_days) <= 2 then "0.8"
 			when AVG(tmp.diff_days) > 2 and AVG(tmp.diff_days) <= 4 then "0.6"
@@ -688,8 +692,8 @@ func QueryTestValidBugRate(db *sql.DB, accounts []string, startTime, endTime str
 	results := map[string]QueryTestValidBugRateResult{}
 	sqlCmd := fmt.Sprintf(`
 		select account ,AVG(build_fix_bugs/project_build_bugs) as validate_bug_rate,
-		case when AVG(build_fix_bugs/project_build_bugs) >= 0.95 then 1.2
-			when AVG(build_fix_bugs/project_build_bugs) >= 0.9 and AVG(build_fix_bugs/project_build_bugs) < 0.95 then 1.0
+		case 
+			when AVG(build_fix_bugs/project_build_bugs) >= 0.9 then 1.0
 			when AVG(build_fix_bugs/project_build_bugs) >= 0.8 and AVG(build_fix_bugs/project_build_bugs) < 0.9 then 0.8
 			when AVG(build_fix_bugs/project_build_bugs) >= 0.7 and AVG(build_fix_bugs/project_build_bugs) < 0.8 then 0.5
 			else 0 end as validate_bug_rate_standard
@@ -775,11 +779,11 @@ func QueryTestBugCaseRate(db *sql.DB, accounts []string, startTime, endTime stri
 	results := map[string]QueryTestBugCaseRateResult{}
 	sqlCmd := fmt.Sprintf(`
 		select account ,AVG(build_case_bugs/project_build_bugs)  as case_bug_rate,
-		case when AVG(build_case_bugs/project_build_bugs) >= 0.95 then 1.2
-			when AVG(build_case_bugs/project_build_bugs) >= 0.9 and AVG(build_case_bugs/project_build_bugs) < 0.95 then 1.0
+		case 
+			when AVG(build_case_bugs/project_build_bugs) >= 0.9 then 1.0
 			when AVG(build_case_bugs/project_build_bugs) >= 0.8 and AVG(build_case_bugs/project_build_bugs) < 0.9 then 0.8
-			when AVG(build_case_bugs/project_build_bugs) >= 0.7 and AVG(build_case_bugs/project_build_bugs) < 0.8 then 0.5
-			else 0 end as case_bug_rate_standard
+			when AVG(build_case_bugs/project_build_bugs) >= 0.7 and AVG(build_case_bugs/project_build_bugs) < 0.8 then 0.6
+			else 0.5 end as case_bug_rate_standard
 		from 
 		( 
 			select tmp.account,tmp.project , count(tmp.id) as build_case_bugs,sum(DISTINCT tmp.build_bugs) as project_build_bugs
@@ -824,7 +828,8 @@ func QueryProjectProgress(db *sql.DB, accounts []string, startTime, endTime stri
 	results := map[string]QueryProjectProgressResult{}
 	sqlCmd := fmt.Sprintf(`
 		select account ,((AVG(project_diff) + AVG(test_diff))/2) as avg_diff_days,
-		case when ((AVG(project_diff) + AVG(test_diff))/2) <= -3 then 1.2
+		case 
+			when ((AVG(project_diff) + AVG(test_diff))/2) <= -3 then 1.2
 			when ((AVG(project_diff) + AVG(test_diff))/2) > -3 and ((AVG(project_diff) + AVG(test_diff))/2) <= 0 then 1.0
 			when ((AVG(project_diff) + AVG(test_diff))/2) > 0 and ((AVG(project_diff) + AVG(test_diff))/2) <= 2 then 0.8
 			when ((AVG(project_diff) + AVG(test_diff))/2) > 2 and ((AVG(project_diff) + AVG(test_diff))/2) <= 4 then 0.6

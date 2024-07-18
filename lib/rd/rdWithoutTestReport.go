@@ -155,7 +155,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 		}
 	}
 
-	// 项目版本bug遗留率情况 无测试报告
+	// 项目版本bug遗留率 无测试报告
 	bugCarryOverResult := dbQuery.QueryRdBugCarryOverWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryOverResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -187,7 +187,6 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 		}
 	}
 
-	// 项目版本bug遗留率情况 无测试报告
 
 
 	// 工时预估达成比
@@ -204,9 +203,13 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 结算系数
-	for account, kpiGrade := range kpiGrades {
+	for account, _ := range kpiGrades {
 		tmp := kpiGrades[account]
-		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
+		// if len(tmp.BugInfoList) == 0 {
+		// 	tmp.TotalGrade -= tmp.BugCarryStandardGrade
+		// 	tmp.TotalGrade += BUG_CARRY_OVER_STANDARD
+		// }
+		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(tmp.TotalGrade)
 		kpiGrades[account] = tmp
 	}
 

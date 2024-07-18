@@ -46,7 +46,9 @@ func MakeRdExcel(path string, data rd.RdKpiGrade) error {
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
 	// G4. 项目进度达成率 完成情况
-	projectDetail := "项目名称/冲刺名称/预期结束时间/实际结束时间/差值\n\n"
+	projectDetail := fmt.Sprintf("平均差值天数：%v\n\n", data.AvgDiffExpect)
+	projectDetail += "项目名称/冲刺名称/预期结束时间/实际结束时间/差值\n\n"
+	
 	for _, v := range data.ProjectProgressList {
 		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.ProjectName, v.SprintName, v.End, v.RealEnd, v.DiffDays)
 	}
@@ -66,7 +68,8 @@ func MakeRdExcel(path string, data rd.RdKpiGrade) error {
 	f.SetCellValue("Sheet1", "H5", data.TotalStoryScore)
 
 	// G6. bug遗留率 完成情况
-	bugDetail := "测试报告/bug id/bug标题/bug解决方案/bug状态\n\n"
+	bugDetail := fmt.Sprintf("bug遗留率: %v\n\n", data.BugCarryOverRate)
+	bugDetail += "测试报告/bug id/bug标题/bug解决方案/bug状态\n\n"
 	for _, v := range data.BugInfoList {
 		bugDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.TestReport, v.BugId, v.BugTitle, v.BugResolution, v.BugStatus)
 	}
@@ -82,7 +85,8 @@ func MakeRdExcel(path string, data rd.RdKpiGrade) error {
 	f.SetCellValue("Sheet1", "H7", data.TimeEstimateStandardGrade)
 
 	// G8. 版本提测次数 完成情况
-	pubDetail := "项目类型/项目名称/发版次数/最后一次提测时间\n\n"
+	pubDetail := fmt.Sprintf("平均提测次数：%v\n\n", data.AvgPubTimes)
+	pubDetail += "项目类型/项目名称/发版次数/最后一次提测时间\n\n"
 	for _, v := range data.PubTimeList {
 		pubDetail += fmt.Sprintf("%v/%v/%v/%v\n\n", v.ProjectType, v.ProjectName, v.PubTimes, v.LastPubTime)
 	}
@@ -159,7 +163,8 @@ func MakeRdWithoutTestreportExcel(path string, data rd.RdWithoutTestReportKpiGra
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
 	// G4. 项目进度达成率 完成情况
-	projectDetail := "项目名称/冲刺名称/预期结束时间/实际结束时间/差值\n\n"
+	projectDetail := fmt.Sprintf("平均差值天数：%v\n\n", data.AvgDiffExpect)
+	projectDetail += "项目名称/冲刺名称/预期结束时间/实际结束时间/差值\n\n"
 	for _, v := range data.ProjectProgressList {
 		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.ProjectName, v.SprintName, v.End, v.RealEnd, v.DiffDays)
 	}
@@ -179,7 +184,8 @@ func MakeRdWithoutTestreportExcel(path string, data rd.RdWithoutTestReportKpiGra
 	f.SetCellValue("Sheet1", "H5", data.TotalStoryScore)
 
 	// G6. bug遗留率 完成情况
-	bugDetail := "项目/bug id/bug标题/bug解决方案/bug状态\n\n"
+	bugDetail := fmt.Sprintf("bug遗留率: %v\n\n", data.BugCarryOverRate)
+	bugDetail += "项目/bug id/bug标题/bug解决方案/bug状态\n\n"
 	for _, v := range data.BugInfoList {
 		bugDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.ProjectName, v.BugId, v.BugTitle, v.BugResolution, v.BugStatus)
 	}
@@ -267,7 +273,8 @@ func MakePmExcel(path string, data pm.PmKpiGrade) error {
 	f.SetCellValue("Sheet1", "H4", data.ProgressStandardGrade)
 
 	// G5. 项目成果完整率 完成情况
-	projectCompleteDetail := "项目名称/需求完整率\n\n"
+	projectCompleteDetail := fmt.Sprintf("平均完成率: %v\n\n", data.CompleteRate)
+	projectCompleteDetail += "项目名称/需求完整率\n\n"
 	for _, v := range data.ProjectCompleteList {
 		projectCompleteDetail += fmt.Sprintf("%v/%v\n\n", v.ProjectName, v.CompleteRate)
 	}
@@ -281,7 +288,7 @@ func MakePmExcel(path string, data pm.PmKpiGrade) error {
 	storyNumDetail += fmt.Sprintf("%v/%v/%v\n\n", data.ProjectedStoryNum, data.DevelopedStoryNum, data.ClosedStoryNum)
 	f.SetCellValue("Sheet1", "G6", storyNumDetail)
 
-	// H6. bug遗留率 最终得分
+	// H6. 项目规划需求数 最终得分
 	f.SetCellValue("Sheet1", "H6", data.StoryNumGrade)
 
 	// G7. 预估承诺完成率 完成情况

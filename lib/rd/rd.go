@@ -7,7 +7,7 @@ import (
 
 const (
 	// 项目进度达成率 分值
-	PROJECT_PROGRESS_STANDARD = 25
+	PROJECT_PROGRESS_STANDARD = 30
 
 	// 需求完成率 分值
 	STORY_STANDARD = 25
@@ -16,7 +16,7 @@ const (
 	BUG_CARRY_OVER_STANDARD = 25
 	
 	// 工时预估达成比 分值
-	TIME_ESTIMATE_STANDARD = 15
+	TIME_ESTIMATE_STANDARD = 10
 
 	// 版本提测次数 分值
 	PUB_TIMES_STANDARD = 10
@@ -193,7 +193,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 		}
 	}
 
-	// 项目版本bug遗留率情况 有测试报告
+	// 项目版本bug遗留率 有测试报告
 	bugCarryOverResult := dbQuery.QueryRdBugCarryOver(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryOverResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -224,8 +224,8 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 			kpiGrades[account] = tmp
 		}
 	}
+ 
 
-	// 项目版本bug遗留率情况 无测试报告
 
 
 	// 工时预估达成比
@@ -273,9 +273,13 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 结算系数
-	for account, kpiGrade := range kpiGrades {
+	for account, _ := range kpiGrades {
 		tmp := kpiGrades[account]
-		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
+		// if len(tmp.BugInfoList) == 0 {
+		// 	tmp.TotalGrade -= tmp.BugCarryStandardGrade
+		// 	tmp.TotalGrade += BUG_CARRY_OVER_STANDARD
+		// }
+		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(tmp.TotalGrade)
 		kpiGrades[account] = tmp
 	}
 

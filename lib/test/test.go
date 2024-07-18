@@ -14,7 +14,7 @@ const (
 
 	// bug转需求数
 	BUG_TO_STORY_NUM_STANDARD = 20
-	B
+	BUG_ONE_GRADE = 3
 
 	// 用例发现bug率
 	CASE_BUG_RATE_STANDARD = 20
@@ -126,7 +126,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			tmp.BugToStoryNum = result.ToStory
-			tmp.BugToStoryGrade = float64(result.ToStory) * BUG_TO_STORY_NUM_STANDARD
+			tmp.BugToStoryGrade = float64(result.ToStory) * BUG_ONE_GRADE
 			if tmp.BugToStoryGrade > BUG_TO_STORY_NUM_STANDARD {
 				tmp.TotalGrade += BUG_TO_STORY_NUM_STANDARD
 			} else {
