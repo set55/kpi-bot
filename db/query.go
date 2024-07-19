@@ -129,6 +129,31 @@ type (
 		ProgressStandard float64 // 项目进度达成基数
 	}
 
+	// 项目软件进度完成情况
+	QueryProjectProgressDetailResult struct {
+		Account        string // 禅道账号
+		ProjectId      int64  // 项目id
+		ProjectName    string // 项目名称
+		ProjectType    string // 项目类型
+		ProjectEnd     string // 项目预估结束时间
+		ProjectRealEnd string // 项目实际结束时间
+		ProjectDiff    int    // 与预期相差天数
+		TestStart      string // 测试开始时间
+		TestEnd        string // 测试结束时间
+		TestDiff       int    // 测试与预期相差天数
+	}
+
+	// 项目软件进度完成情况
+	QueryProjectProgressDetailResultWithoutTestReport struct {
+		Account        string // 禅道账号
+		ProjectId      int64  // 项目id
+		ProjectName    string // 项目名称
+		ProjectType    string // 项目类型
+		ProjectEnd     string // 项目预估结束时间
+		ProjectRealEnd string // 项目实际结束时间
+		ProjectDiff    int    // 与预期相差天数
+	}
+
 	// 项目成果完成率,不需要关注执行，只需要看项目需求完成度，因为有执行一定有项目
 	QueryProjectCompleteRateResult struct {
 		Account              string  // 禅道账号
@@ -156,6 +181,23 @@ type (
 		DiffDays         float64 // 平均项目进度预估天数差值
 		ProgressStandard float64 // 项目进度达成基数
 	}
+
+	// 项目预估工时准确率
+	QueryProjectTimeEstimateRateResult struct {
+		Account              string  // 禅道账号
+		TimeEstimateRate     float64 // 工时预估达成比
+		TimeEstimateStandard float64 // 工时预估基数
+	}
+
+	// 项目预估工时准确率 完成情况
+	QueryProjectTimeEstimateRateResultDetail struct {
+		Account       string  // 禅道账号
+		StoryId       int64   // 需求id
+		Title         string  // 需求标题
+		Estimate      float64 // 预估工时
+		StoryConsumed float64 // 需求消耗工时
+		EstimateRate  float64 // 预估工时准确率
+	}
 )
 
 // 软件研发项目进度达成率
@@ -176,7 +218,7 @@ func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime st
 		select a.account,c.name ,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_expect
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
-		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private")
+		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private") and openedBy in ("shawn.wang", "qixiaofeng", "guoqiao.chen")
 		where a.account in (%s) and c.realEnd between "%s" and "%s"
 		order by a.account,c.realEnd desc
 		) tmp
@@ -212,10 +254,10 @@ func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime st
 func QueryRdProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryRdProjectProgressDetailResult {
 	results := map[string][]QueryRdProjectProgressDetailResult{}
 	sqlCmd := fmt.Sprintf(`
-		select a.account, c.project as project_name ,c.name as project_sprint_name,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_day
+		select a.account, c.id as project_name ,c.name as project_sprint_name,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_day
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
-		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private")
+		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private") and openedBy in ("shawn.wang", "qixiaofeng", "guoqiao.chen")
 		where a.account in (%s) and c.realEnd between "%s" and "%s"
 		order by a.account,c.realEnd desc
 	`, common.AccountArrayToString(accounts), startTime, endTime)
@@ -265,7 +307,7 @@ func QueryRdStoryScore(db *sql.DB, accounts []string, startTime, endTime string)
 			where a.account in (%s) order by a.account desc 
 		) tmp 
 		group by account
-	`,startTime, endTime, common.AccountArrayToString(accounts))
+	`, startTime, endTime, common.AccountArrayToString(accounts))
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
 	if err != nil {
@@ -331,7 +373,7 @@ func QueryRdStoryDetail(db *sql.DB, accounts []string, startTime, endTime string
 	return results
 }
 
-// 项目版本bug遗留率情况 有测试报告
+// 軟件项目版本bug遗留率情况 有测试报告
 func QueryRdBugCarryOver(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryRdBugCarryOverResult {
 	results := map[string]QueryRdBugCarryOverResult{}
 	sqlCmd := fmt.Sprintf(`
@@ -380,7 +422,7 @@ func QueryRdBugCarryOver(db *sql.DB, accounts []string, startTime, endTime strin
 	return results
 }
 
-// 項目版本bug遗留實際情況 有测试报告
+// 軟件項目版本bug遗留實際情況 有测试报告
 func QueryRdBugCarryOverDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryRdBugCarryOverDetailResult {
 	results := map[string][]QueryRdBugCarryOverDetailResult{}
 	sqlCmd := fmt.Sprintf(`
@@ -418,7 +460,44 @@ func QueryRdBugCarryOverDetail(db *sql.DB, accounts []string, startTime, endTime
 	return results
 }
 
-// 项目版本bug遗留率情况 无测试报告
+// 軟件研發測試單數量
+func QueryCountTestTask(db *sql.DB, accounts []string, startTime, endTime string) map[string]int {
+	results := map[string]int{}
+	sqlCmd := fmt.Sprintf(`
+		select 
+			a.account , count(b.name) as testtask_num
+			from zt_user a 
+			inner join zt_testtask b on b.createdBy = a.account and  b.createdDate BETWEEN "%s" and "%s"
+			where a.account in (%s) 
+			group by a.account
+		`, startTime, endTime, common.AccountArrayToString(accounts))
+	fmt.Println(sqlCmd)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var account string
+		var count int
+		err = rows.Scan(
+			&account,
+			&count,
+		)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+
+		fmt.Printf("Account: %s, Testtask Count: %d\n", account, count)
+
+		results[account] = count
+	}
+	return results
+
+}
+
+// 軟件项目版本bug遗留率情况 无测试报告
 func QueryRdBugCarryOverWithoutTestReport(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryRdBugCarryOverResult {
 	results := map[string]QueryRdBugCarryOverResult{}
 	sqlCmd := fmt.Sprintf(`
@@ -434,8 +513,8 @@ func QueryRdBugCarryOverWithoutTestReport(db *sql.DB, accounts []string, startTi
 			select a.account,b.project,c.name,count(1) as build_fix_bug,
 			(select count(1) from zt_bug where project = b.project and deleted = "0" and status = "active" and assignedTo = a.account and assignedDate between "%s" and "%s") as build_postponed_bugs 
 			from zt_user a 
-			inner join zt_bug b on b.deleted="0" and b.resolvedBy = a.account and b.resolution in ( "fixed") and assignedDate between "%s" and "%s"
-			inner join zt_project c on c.id = b.project
+			left join zt_bug b on b.deleted="0" and b.resolvedBy = a.account and b.resolution in ( "fixed") and assignedDate between "%s" and "%s"
+			left join zt_project c on c.id = b.project
 			where a.account in (%s)
 			group by a.account ,b.project,c.name
 		) tmp 
@@ -657,7 +736,7 @@ func QueryTestProjectProgress(db *sql.DB, accounts []string, startTime, endTime 
 		inner join zt_testreport b on b.createdBy = a.account and b.end between "%s" and "%s" and b.deleted ="0"
 		inner join zt_testtask c on c.id = b.tasks
 		where a.account in (%s)
-		) tmp
+		) tmp group by tmp.account
 	`, startTime, endTime, common.AccountArrayToString(accounts))
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
@@ -836,14 +915,14 @@ func QueryProjectProgress(db *sql.DB, accounts []string, startTime, endTime stri
 			when ((AVG(project_diff) + AVG(test_diff))/2) > 4 and ((AVG(project_diff) + AVG(test_diff))/2) <= 5 then 0.5
 			else 0 end as progress_standard
 		from ( 
-			select a.account,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff,
-			c.end test_end,TIMESTAMPDIFF(DAY,c.end,c.createdDate) as test_diff
+			select a.account,b.id,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff,
+			d.end as test_start, c.end as test_end,TIMESTAMPDIFF(DAY,c.end,d.end) as test_diff
 			from zt_user a 
 			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s"
 			inner join zt_testreport c on (b.type="sprint" and c.execution = b.id) or (c.execution=0 and b.type="project" and c.project=b.id) 
 			inner join zt_testtask d on d.id = c.tasks 
 			where a.account in (%s) 
-		) tmp
+		) tmp group by tmp.account
 	`, startTime, endTime, common.AccountArrayToString(accounts))
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
@@ -870,6 +949,130 @@ func QueryProjectProgress(db *sql.DB, accounts []string, startTime, endTime stri
 	return results
 }
 
+// 项目软件项目进度达成率 完成情况
+func QueryProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryProjectProgressDetailResult {
+	results := map[string][]QueryProjectProgressDetailResult{}
+	sqlCmd := fmt.Sprintf(`
+	select a.account,b.id,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff,
+			d.end as test_start, c.end as test_end,TIMESTAMPDIFF(DAY,c.end,d.end) as test_diff
+			from zt_user a
+			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s"
+			inner join zt_testreport c on (b.type="sprint" and c.execution = b.id) or (c.execution=0 and b.type="project" and c.project=b.id)
+			inner join zt_testtask d on d.id = c.tasks
+			where a.account in (%s)
+	`, startTime, endTime, common.AccountArrayToString(accounts))
+	fmt.Println(sqlCmd)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var result QueryProjectProgressDetailResult
+		err = rows.Scan(
+			&result.Account,
+			&result.ProjectId,
+			&result.ProjectName,
+			&result.ProjectType,
+			&result.ProjectEnd,
+			&result.ProjectRealEnd,
+			&result.ProjectDiff,
+			&result.TestStart,
+			&result.TestEnd,
+			&result.TestDiff,
+		)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+
+		fmt.Printf("Account: %s, ProjectId: %d, ProjectName: %s, ProjectType: %s, ProjectEnd: %s, ProjectRealEnd: %s, ProjectDiff: %d, TestStart: %s, TestEnd: %s, TestDiff: %d\n", result.Account, result.ProjectId, result.ProjectName, result.ProjectType, result.ProjectEnd, result.ProjectRealEnd, result.ProjectDiff, result.TestStart, result.TestEnd, result.TestDiff)
+
+		results[result.Account] = append(results[result.Account], result)
+	}
+	return results
+}
+
+// 项目软件项目进度达成率，无测试报告
+func QueryProjectProgressWithout(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryProjectProgressResult {
+	results := map[string]QueryProjectProgressResult{}
+	sqlCmd := fmt.Sprintf(`
+		select account ,AVG(project_diff) as avg_diff_days,
+		case 
+			when AVG(project_diff) <= -3 then 1.2
+			when AVG(project_diff) > -3 and AVG(project_diff) <= 0 then 1.0
+			when AVG(project_diff) > 0 and AVG(project_diff) <= 2 then 0.8
+			when AVG(project_diff) > 2 and AVG(project_diff) <= 4 then 0.6
+			when AVG(project_diff) > 4 and AVG(project_diff) <= 5 then 0.5
+			else 0 end as progress_standard
+		from ( 
+			select a.account,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff
+			from zt_user a 
+			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s"
+			where a.account in (%s) 
+		) tmp group by tmp.account
+	`, startTime, endTime, common.AccountArrayToString(accounts))
+	fmt.Println(sqlCmd)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result QueryProjectProgressResult
+		err = rows.Scan(
+			&result.Account,
+			&result.AvgDiffDays,
+			&result.ProgressStandard,
+		)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+
+		fmt.Printf("Account: %s, AvgDiffDays: %f, ProgressStandard: %f\n", result.Account, result.AvgDiffDays, result.ProgressStandard)
+
+		results[result.Account] = result
+	}
+	return results
+}
+
+// 项目软件项目进度达成率 完成情况 无测试报告
+func QueryProjectProgressDetailWithoutTestReport(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryProjectProgressDetailResultWithoutTestReport {
+	results := map[string][]QueryProjectProgressDetailResultWithoutTestReport{}
+	sqlCmd := fmt.Sprintf(`
+	select a.account,b.id,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff
+			from zt_user a
+			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s"
+			where a.account in (%s)
+	`, startTime, endTime, common.AccountArrayToString(accounts))
+	fmt.Println(sqlCmd)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var result QueryProjectProgressDetailResultWithoutTestReport
+		err = rows.Scan(
+			&result.Account,
+			&result.ProjectId,
+			&result.ProjectName,
+			&result.ProjectType,
+			&result.ProjectEnd,
+			&result.ProjectRealEnd,
+			&result.ProjectDiff,
+		)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+
+		fmt.Printf("Account: %s, ProjectId: %d, ProjectName: %s, ProjectType: %s, ProjectEnd: %s, ProjectRealEnd: %s, ProjectDiff: %d\n", result.Account, result.ProjectId, result.ProjectName, result.ProjectType, result.ProjectEnd, result.ProjectRealEnd, result.ProjectDiff)
+
+		results[result.Account] = append(results[result.Account], result)
+	}
+	return results
+}
+
 // 项目成果完成率,不需要关注执行，只需要看项目需求完成度，因为有执行一定有项目
 func QueryProjectCompleteRate(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryProjectCompleteRateResult {
 	results := map[string]QueryProjectCompleteRateResult{}
@@ -891,7 +1094,7 @@ func QueryProjectCompleteRate(db *sql.DB, accounts []string, startTime, endTime 
 			inner join zt_story c on c.id= d.story and c.deleted = "0" and c.stage not in ("waiting","planned","projected","developing") 
 			where a.account in (%s) 
 			group by a.account,b.id 
-		) tmp
+		) tmp group by account
 	`, startTime, endTime, common.AccountArrayToString(accounts))
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
@@ -930,7 +1133,8 @@ func QueryProjectCompleteRateDetail(db *sql.DB, accounts []string, startTime, en
 				where project = b.id) as project_storys 
 			from zt_user a 
 			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s" and b.project = 0 
-			inner join zt_projectstory d on d.project = b.id inner join zt_story c on c.id= d.story and c.deleted = "0" and c.stage not in ("waiting","planned","projected","developing") 
+			inner join zt_projectstory d on d.project = b.id
+			inner join zt_story c on c.id= d.story and c.deleted = "0" and c.stage not in ("waiting","planned","projected","developing") 
 			where a.account in (%s) 
 			group by a.account,b.id 
 		) tmp
@@ -1048,6 +1252,93 @@ func QueryProjectEstimateRate(db *sql.DB, accounts []string, startTime, endTime 
 		fmt.Printf("Account: %s, AvgDiffDays: %f, ProgressStandard: %f\n", result.Account, result.DiffDays, result.ProgressStandard)
 
 		results[result.Account] = result
+	}
+	return results
+}
+
+// 项目工时预估准确率
+func QueryProjectTimeEstimateRate(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryProjectTimeEstimateRateResult {
+	results := map[string]QueryProjectTimeEstimateRateResult{}
+	sqlCmd := fmt.Sprintf(`
+		select 
+		tmp.account as account,(100 - abs(avg(tmp.story_consumed / tmp.estimate) - 1)*100) as estimate_rate,
+		case when (100 - abs(avg(tmp.story_consumed / tmp.estimate) - 1)*100) > 90 then 1
+		when (100 - abs(avg(tmp.story_consumed / tmp.estimate) - 1)*100) <= 90 and (100 - abs(avg(tmp.story_consumed / tmp.estimate) - 1)*100) > 80 then 0.8
+		when (100 - abs(avg(tmp.story_consumed / tmp.estimate) - 1)*100) <= 80 and (100 - abs(avg(tmp.story_consumed / tmp.estimate) - 1)*100) > 70 then 0.6
+		when (100 - abs(avg(tmp.story_consumed / tmp.estimate) - 1)*100) <= 70 and (100 - abs(avg(tmp.story_consumed / tmp.estimate) - 1)*100) > 60 then 0.4
+		else 0 end as estimate_standard
+		from (
+		select
+		a.account,b.id,b.title,b.estimate,sum(c.consumed) as story_consumed
+		from zt_user a
+		inner  join zt_story b on b.openedBy = a.account and b.deleted = "0" 
+		inner join zt_task c on c.story = b.id  and c.finishedDate BETWEEN "%s" and "%s" and c.deleted = "0" and c.parent= 0
+		where a.account in (%s)
+		GROUP BY a.account,b.id,b.estimate
+		) tmp
+		GROUP BY tmp.account;
+	`, startTime, endTime, common.AccountArrayToString(accounts))
+	fmt.Println(sqlCmd)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result QueryProjectTimeEstimateRateResult
+		err = rows.Scan(
+			&result.Account,
+			&result.TimeEstimateRate,
+			&result.TimeEstimateStandard,
+		)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+
+		fmt.Printf("Account: %s, TimeEstimateRate: %f, TimeEstimateStandard: %f\n", result.Account, result.TimeEstimateRate, result.TimeEstimateStandard)
+
+		results[result.Account] = result
+	}
+	return results
+}
+
+// 项目工时预估准确率 完成情况
+func QueryProjectTimeEstimateRateDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryProjectTimeEstimateRateResultDetail {
+	results := map[string][]QueryProjectTimeEstimateRateResultDetail{}
+	sqlCmd := fmt.Sprintf(`
+		select
+		a.account,b.id,b.title,b.estimate,sum(c.consumed) as story_consumed, 100 - (1 - abs(sum(c.consumed)/b.estimate))*100 as estimate_rate
+		from zt_user a
+		inner  join zt_story b on b.openedBy = a.account and b.deleted = "0" 
+		inner join zt_task c on c.story = b.id  and c.finishedDate BETWEEN "%s" and "%s" and c.deleted = "0" and c.parent= 0
+		where a.account in (%s)
+		GROUP BY a.account,b.id,b.estimate;
+	`, startTime, endTime, common.AccountArrayToString(accounts))
+	fmt.Println(sqlCmd)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result QueryProjectTimeEstimateRateResultDetail
+		err = rows.Scan(
+			&result.Account,
+			&result.StoryId,
+			&result.Title,
+			&result.Estimate,
+			&result.StoryConsumed,
+			&result.EstimateRate,
+		)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+
+		fmt.Printf("Account: %s, StoryId: %v, Title: %v, Estimate: %v, StoryConsumed: %v, EstimateRate: %v\n", result.Account, result.StoryId, result.Title, result.Estimate, result.StoryConsumed, result.EstimateRate)
+
+		results[result.Account] = append(results[result.Account], result)
 	}
 	return results
 }

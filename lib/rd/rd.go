@@ -10,11 +10,11 @@ const (
 	PROJECT_PROGRESS_STANDARD = 30
 
 	// 需求完成率 分值
-	STORY_STANDARD = 25
+	STORY_STANDARD = 40
 
 	// bug遗留率 分值
-	BUG_CARRY_OVER_STANDARD = 25
-	
+	BUG_CARRY_OVER_STANDARD = 20
+
 	// 工时预估达成比 分值
 	TIME_ESTIMATE_STANDARD = 10
 
@@ -22,17 +22,17 @@ const (
 	PUB_TIMES_STANDARD = 10
 
 	// 系数
-	TOP_COEFFICIENT = 1.2
+	TOP_COEFFICIENT    = 1.2
 	SECOND_COEFFICIENT = 1.0
-	THIRD_COEFFICIENT = 0.7
+	THIRD_COEFFICIENT  = 0.7
 )
 
 type (
 	RdKpi struct {
-		Accounts []string // rd的账号
-		Db       *sql.DB  // 数据库连接
-		StartTime string // 开始时间
-		EndTime   string // 结束时间
+		Accounts  []string // rd的账号
+		Db        *sql.DB  // 数据库连接
+		StartTime string   // 开始时间
+		EndTime   string   // 结束时间
 	}
 
 	RdKpiGrade struct {
@@ -52,23 +52,26 @@ type (
 		StoryList       []StoryInfo // 需求详情
 
 		// bug遗留率
-		BugCarryOverRate float64        // bug遗留率
-		BugCarryStandard float64        // bug遗留率基数
-		BugCarryStandardGrade float64   // bug遗留率 实际分数
-		BugInfoList      []BugCarryInfo // bug遗留详情
+		BugCarryOverRate      float64        // bug遗留率
+		BugCarryStandard      float64        // bug遗留率基数
+		BugCarryStandardGrade float64        // bug遗留率 实际分数
+		BugInfoList           []BugCarryInfo // bug遗留详情
+
+		// 測試單數目
+		TestTaskCount int
 
 		// 工时预估达成比
-		TimeEstimateRate     float64 // 工时预估达成比
-		TimeEstimateStandard float64 // 工时预估基数
+		TimeEstimateRate          float64 // 工时预估达成比
+		TimeEstimateStandard      float64 // 工时预估基数
 		TimeEstimateStandardGrade float64 // 工时预估实际分数
 
 		// 版本提测次数
-		AvgPubTimes         float64       // 平均提测次数
-		AvgPubTimesStandard float64       // 平均提测次数基数
-		AvgPubTimesStandardGrade float64  // 平均提测次数实际分数
-		PubTimeList         []PubTimeInfo // 提测详情
+		AvgPubTimes              float64       // 平均提测次数
+		AvgPubTimesStandard      float64       // 平均提测次数基数
+		AvgPubTimesStandardGrade float64       // 平均提测次数实际分数
+		PubTimeList              []PubTimeInfo // 提测详情
 
-		TotalGrade float64 // 总分数
+		TotalGrade         float64 // 总分数
 		TotalGradeStandard float64 // 总分数基数
 	}
 
@@ -90,7 +93,7 @@ type (
 
 	BugCarryInfo struct {
 		Account       string // 禅道账号
-		TestReport    string // 测试报告
+		ProjectName   string // 项目名称
 		BugId         int64  // bug id
 		BugTitle      string // bug标题
 		BugResolution string // bug解决方案
@@ -98,21 +101,21 @@ type (
 	}
 
 	PubTimeInfo struct {
-		Account         string  // 禅道账号
-		ProjectType     string  // 项目类型
-		ProjectName     string  // 项目名称
-		PubTimes        int     // 发版次数
-		LastPubTime     string  // 最后一次提测时间
+		Account     string // 禅道账号
+		ProjectType string // 项目类型
+		ProjectName string // 项目名称
+		PubTimes    int    // 发版次数
+		LastPubTime string // 最后一次提测时间
 	}
 )
 
 // NewRdKpi 创建一个研发KPI对象
 func NewRdKpi(db *sql.DB, accounts []string, startTime, endTime string) *RdKpi {
 	return &RdKpi{
-		Accounts: accounts,
-		Db:       db,
+		Accounts:  accounts,
+		Db:        db,
 		StartTime: startTime,
-		EndTime: endTime,
+		EndTime:   endTime,
 	}
 }
 
@@ -123,9 +126,9 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	// 建立所有账户啊kpi信息
 	for _, account := range l.Accounts {
 		kpiGrades[account] = RdKpiGrade{
-			Account: account,
+			Account:   account,
 			StartTime: l.StartTime,
-			EndTime: l.EndTime,
+			EndTime:   l.EndTime,
 		}
 	}
 
@@ -182,51 +185,61 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 			tmp := kpiGrades[account]
 			for _, r := range result {
 				tmp.StoryList = append(tmp.StoryList, StoryInfo{
-					Id: r.StoryId,
-					Account: r.Account,
-					Title: r.Title,
+					Id:       r.StoryId,
+					Account:  r.Account,
+					Title:    r.Title,
 					Estimate: r.Estimate,
-					Score: r.Score,
+					Score:    r.Score,
 				})
 			}
 			kpiGrades[account] = tmp
 		}
 	}
 
-	// 项目版本bug遗留率 有测试报告
-	bugCarryOverResult := dbQuery.QueryRdBugCarryOver(l.Db, l.Accounts, l.StartTime, l.EndTime)
-	for account, result := range bugCarryOverResult {
+	// 測試單數量
+	taskCountResult := dbQuery.QueryCountTestTask(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	for account, result := range taskCountResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
-			tmp.BugCarryOverRate = result.BugCarryOverRate
-			tmp.BugCarryStandard = result.BugCarryOverRateStandard
-			tmp.BugCarryStandardGrade = result.BugCarryOverRateStandard * BUG_CARRY_OVER_STANDARD
-			tmp.TotalGrade += tmp.BugCarryStandardGrade
+			tmp.TestTaskCount = result
 			kpiGrades[account] = tmp
 		}
 	}
 
-	// 項目版本bug遗留實際情況 有测试报告
-	bugCarryDetailResult := dbQuery.QueryRdBugCarryOverDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	// 项目版本bug遗留率 無測試報告
+	bugCarryOverResult := dbQuery.QueryRdBugCarryOverWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	for account, result := range bugCarryOverResult {
+		if _, ok := kpiGrades[account]; ok {
+			tmp := kpiGrades[account]
+			if tmp.TestTaskCount > 0 {
+				tmp.BugCarryOverRate = result.BugCarryOverRate
+				tmp.BugCarryStandard = result.BugCarryOverRateStandard
+				tmp.BugCarryStandardGrade = result.BugCarryOverRateStandard * BUG_CARRY_OVER_STANDARD
+				tmp.TotalGrade += tmp.BugCarryStandardGrade
+				kpiGrades[account] = tmp
+			}
+
+		}
+	}
+
+	// 項目版本bug遗留實際情況 無測試報告
+	bugCarryDetailResult := dbQuery.QueryRdBugCarryOverDetailWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			for _, r := range result {
 				tmp.BugInfoList = append(tmp.BugInfoList, BugCarryInfo{
-					Account: r.Account,
-					TestReport: r.TestReport,
-					BugId: r.BugId,
-					BugTitle: r.BugTitle,
+					Account:       r.Account,
+					ProjectName:   r.ProjectName,
+					BugId:         r.BugId,
+					BugTitle:      r.BugTitle,
 					BugResolution: r.BugResolution,
-					BugStatus: r.BugStatus,
+					BugStatus:     r.BugStatus,
 				})
 			}
 			kpiGrades[account] = tmp
 		}
 	}
- 
-
-
 
 	// 工时预估达成比
 	timeEstimateRateResult := dbQuery.QueryRdTimeEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
@@ -261,10 +274,10 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 			tmp := kpiGrades[account]
 			for _, r := range result {
 				tmp.PubTimeList = append(tmp.PubTimeList, PubTimeInfo{
-					Account: r.Account,
+					Account:     r.Account,
 					ProjectType: r.ProjectType,
 					ProjectName: r.ProjectName,
-					PubTimes: r.PubTimes,
+					PubTimes:    r.PubTimes,
 					LastPubTime: r.LastPubTime,
 				})
 			}
@@ -286,7 +299,6 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	return kpiGrades
 }
 
-
 // 计算得分系数
 func (l *RdKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
 	if totalGrade >= 100 {
@@ -298,4 +310,3 @@ func (l *RdKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
 	}
 	return 0
 }
-

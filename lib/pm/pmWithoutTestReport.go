@@ -8,38 +8,38 @@ import (
 
 const (
 	// 项目软件项目进度达成率 分值
-	PROJECT_PROGRESS_STANDARD = 40
+	PROJECT_PROGRESS_STANDARD_WITHOUT_TESTREPORT = 40
 
 	// 项目成果完成率 分值
-	PROJECT_COMPLETEMENT_STANDARD = 20
+	PROJECT_COMPLETEMENT_STANDARD_WITHOUT_TESTREPORT = 20
 
 	// 项目规划需求数 分值
-	PROJECT_STORY_NUM_STANDARD = 10
-	PROJECTED_STORY_STANDARD = 0.5
-	DEVELOPED_STORY_STANDARD = 1
-	CLOSED_STORY_STANDARD = 1
+	PROJECT_STORY_NUM_STANDARD_WITHOUT_TESTREPORT = 10
+	PROJECTED_STORY_STANDARD_WITHOUT_TESTREPORT = 0.5
+	DEVELOPED_STORY_STANDARD_WITHOUT_TESTREPORT = 1
+	CLOSED_STORY_STANDARD_WITHOUT_TESTREPORT = 1
 
 	// 预估承诺完成率 分值
-	PROJECT_ESTIMATE_STANDARD = 0
+	PROJECT_ESTIMATE_STANDARD_WITHOUT_TESTREPORT = 0
 
 	// 项目预估工时准确率 分值
-	TIME_ESTIMATE_STANDARD = 30
+	TIME_ESTIMATE_STANDARD_WITHOUT_TESTREPORT = 30
 
 	// 系数
-	TOP_COEFFICIENT = 1.2
-	SECOND_COEFFICIENT = 1.0
-	THIRD_COEFFICIENT = 0.7
+	TOP_COEFFICIENT_WITHOUT_TESTREPORT = 1.2
+	SECOND_COEFFICIENT_WITHOUT_TESTREPORT = 1.0
+	THIRD_COEFFICIENT_WITHOUT_TESTREPORT = 0.7
 )
 
 type (
-	PmKpi struct {
+	PmKpiWithoutTestReport struct {
 		Accounts []string // pm的账号
 		Db       *sql.DB  // 数据库连接
 		StartTime string // 开始时间
 		EndTime string // 结束时间
 	}
 
-	PmKpiGrade struct {
+	PmKpiGradeWithoutTestReport struct {
 		Account string // 禅道账号
 
 		StartTime string // 开始时间
@@ -51,7 +51,7 @@ type (
 		ProgressStandardGrade float64 // 项目进度达成率 实际分数
 
 		// 项目软件项目进度达成率 完成情况
-		ProjectProgressList []ProjectProgressInfo
+		ProjectProgressList []ProjectProgressInfoWithoutTestReport
 
 		// 项目成果完成率
 		CompleteRate float64 // 项目成果完成率
@@ -85,7 +85,7 @@ type (
 
 	}
 
-	ProjectProgressInfo struct {
+	ProjectProgressInfoWithoutTestReport struct {
 		Account        string // 禅道账号
 		ProjectId      int64  // 项目id
 		ProjectName    string // 项目名称
@@ -93,28 +93,16 @@ type (
 		ProjectEnd     string // 项目预估结束时间
 		ProjectRealEnd string // 项目实际结束时间
 		ProjectDiff    int    // 与预期相差天数
-		TestStart      string // 测试开始时间
-		TestEnd        string // 测试结束时间
-		TestDiff       int    // 测试与预期相差天数
 	}
 
-	ProjectCompleteInfo struct {
+	ProjectCompleteInfoWithoutTestReport struct {
 		ProjectName string // 项目名称
 		CompleteRate float64 // 项目成果完成率
 	}
-
-	TimeEstimateInfo struct {
-		Account       string  // 禅道账号
-		StoryId       int64   // 需求id
-		Title         string  // 需求标题
-		Estimate      float64 // 预估工时
-		StoryConsumed float64 // 需求消耗工时
-		EstimateRate  float64 // 预估工时准确率
-	}
 )
 // NewPmKpi creates a new PmKpi object
-func NewPmKpi(db *sql.DB, accounts []string, startTime, endTime string) *PmKpi {
-	return &PmKpi{
+func NewPmKpiWithoutTestReport(db *sql.DB, accounts []string, startTime, endTime string) *PmKpiWithoutTestReport {
+	return &PmKpiWithoutTestReport{
 		Accounts: accounts,
 		Db:       db,
 		StartTime: startTime,
@@ -124,12 +112,12 @@ func NewPmKpi(db *sql.DB, accounts []string, startTime, endTime string) *PmKpi {
 
 
 // GetPmKpiGrade gets the PM KPI information
-func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
-	kpiGrades := make(map[string]PmKpiGrade)
+func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmKpiGradeWithoutTestReport {
+	kpiGrades := make(map[string]PmKpiGradeWithoutTestReport)
 
 	// 建立所有账户啊kpi信息
 	for _, account := range l.Accounts {
-		kpiGrades[account] = PmKpiGrade{
+		kpiGrades[account] = PmKpiGradeWithoutTestReport{
 			Account: account,
 			StartTime: l.StartTime,
 			EndTime: l.EndTime,
@@ -137,7 +125,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目软件项目进度达成率
-	progressResult := dbQuery.QueryProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	progressResult := dbQuery.QueryProjectProgressWithout(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range progressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -150,12 +138,12 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目软件项目进度达成率 完成情况
-	progressDetailResult := dbQuery.QueryProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	progressDetailResult := dbQuery.QueryProjectProgressDetailWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range progressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			for _, r := range result {
-				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfo{
+				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfoWithoutTestReport{
 					Account:        r.Account,
 					ProjectId:      r.ProjectId,
 					ProjectName:    r.ProjectName,
@@ -163,9 +151,6 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 					ProjectEnd:     r.ProjectEnd,
 					ProjectRealEnd: r.ProjectRealEnd,
 					ProjectDiff:    r.ProjectDiff,
-					TestStart:      r.TestStart,
-					TestEnd:        r.TestEnd,
-					TestDiff:       r.TestDiff,
 				})
 			}
 			kpiGrades[account] = tmp
@@ -275,7 +260,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	
 	for account, kpiGrade := range kpiGrades {
 		tmp := kpiGrades[account]
-		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
+		tmp.TotalGradeStandard = l.GetRdKpiGradeStandardWithoutTestReport(kpiGrade.TotalGrade)
 		kpiGrades[account] = tmp
 	}
 
@@ -285,7 +270,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 
 
 // 计算得分系数
-func (l *PmKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
+func (l *PmKpiWithoutTestReport) GetRdKpiGradeStandardWithoutTestReport(totalGrade float64) float64 {
 	if totalGrade >= 100 {
 		return TOP_COEFFICIENT
 	} else if totalGrade < 100 && totalGrade >= 80 {

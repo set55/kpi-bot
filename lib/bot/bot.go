@@ -64,6 +64,19 @@ func (l *Bot) ProducePmKpi(templatePath, startTime, endTime string, accounts []s
 	return nil
 }
 
+func (l *Bot) ProducePmKpiWithoutTestReport(templatePath, startTime, endTime string, accounts []string) error {
+	kpiManager := pm.NewPmKpiWithoutTestReport(l.Db, accounts, startTime, endTime)
+	kpiGrades := kpiManager.GetPmKpiGradeWithoutTestReport()
+
+	for _, kpiGrade := range kpiGrades {
+		err := excel.MakePmExcelWithoutTestReport(templatePath, kpiGrade)
+		if err != nil {
+			return fmt.Errorf("make pm excel fail: %v", err)
+		}
+	}
+	return nil
+}
+
 func (l *Bot) ProduceTestKpi(templatePath, startTime, endTime string, accounts []string) error {
 	kpiManager := test.NewTestKpi(l.Db, accounts, startTime, endTime)
 	kpiGrades := kpiManager.GetTestKpiGrade()

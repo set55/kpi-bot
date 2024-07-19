@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	// dbQuery "kpi-bot/db"
+
 	"kpi-bot/lib/bot"
 	"fmt"
 	"log"
@@ -35,6 +37,7 @@ func main() {
 	rdsWithoutTest := []string{"shiwen.tin", "xiechen", "zouyanling", "ruanbanyong", "zhouyao", "liuxiaoyan", "wangtuhe"}
 	tests := []string{"linyanhai", "wangshaoyu"}
 	pms := []string{"shawn.wang", "qixiaofeng"}
+	pmsWithoutTest := []string{"guoqiao.chen"}
 
 
 	robot := bot.NewBot(db)
@@ -53,10 +56,26 @@ func main() {
 		log.Fatalf("error ProducePmKpi: %v", err)
 	}
 
+	err = robot.ProducePmKpiWithoutTestReport("./excel/绩效考核模板-项目.xlsx", "2024-07-01 00:00:00", "2024-07-31 23:59:59", pmsWithoutTest)
+	if err != nil {
+		log.Fatalf("error ProducePmKpiWithoutTestReport: %v", err)
+	}
+
 	err = robot.ProduceTestKpi("./excel/绩效考核模板-测试.xlsx", "2024-07-01 00:00:00", "2024-07-31 23:59:59", tests)
 	if err != nil {
 		log.Fatalf("error ProduceTestKpi: %v", err)
 	}
+
+	// dbQuery.QueryRdBugCarryOver(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryRdBugCarryOverDetail(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryRdBugCarryOverWithoutTestReport(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryRdBugCarryOverDetailWithoutTestReport(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryRdProjectProgress(db, []string{"zhouyao"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryRdProjectProgressDetail(db, []string{"zhouyao"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryProjectProgress(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryProjectProgressWithout(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryProjectCompleteRate(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
+	// dbQuery.QueryProjectCompleteRateDetail(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
 
 }
 
