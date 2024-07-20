@@ -78,20 +78,3 @@ func main() {
 	// dbQuery.QueryProjectCompleteRateDetail(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
 
 }
-
-// func getSheetDimensions(f *excelize.File, sheetName string) (int, int) {
-//     maxRow, maxCol := 0, 0
-//     rows, err := f.GetRows(sheetName)
-//     if err != nil {
-//         return 0, 0
-//     }
-//     for rowIndex, row := range rows {
-//         if len(row) > maxCol {
-//             maxCol = len(row)
-//         }
-//         if rowIndex+1 > maxRow {
-//             maxRow = rowIndex + 1
-//         }
-//     }
-//     return maxRow, maxCol
-// }
