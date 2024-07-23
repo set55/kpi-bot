@@ -2,7 +2,9 @@ package test
 
 import (
 	"database/sql"
+	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
+	"kpi-bot/lib/rd"
 )
 
 const (
@@ -42,7 +44,9 @@ type (
 		EndTime   string // 结束时间
 
 		// 测试软件项目进度达成率
-		TestProgressAvgDiffDays              float64 // 平均项目测试进度预估天数差值
+		SumRealTestDiffDays              float64 // 總實際測試天數
+		SumTestDiffDays				  float64 // 總預估測試天數
+		DiffRate float64 // 平均项目进度延时率
 		TestProgressAvgDiffDaysStandard      float64 // 项目测试进度达成基数
 		TestProgressAvgDiffDaysStandardGrade float64 // 项目测试进度达成率 实际分数
 
@@ -99,9 +103,11 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	for account, result := range testProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
-			tmp.TestProgressAvgDiffDays = result.AvgDiffDays
-			tmp.TestProgressAvgDiffDaysStandard = result.DiffDaysStandard
-			tmp.TestProgressAvgDiffDaysStandardGrade = result.DiffDaysStandard * TEST_PROGRESS_STANDARD
+			tmp.SumRealTestDiffDays = result.SumRealTestDiffDays
+			tmp.SumTestDiffDays = result.SumTestDiffDays
+			tmp.DiffRate = common.GetProjectProgressExpectRate(tmp.SumTestDiffDays, tmp.SumRealTestDiffDays)
+			tmp.TestProgressAvgDiffDaysStandard = rd.GetRdProjectProgressStandard(tmp.DiffRate)
+			tmp.TestProgressAvgDiffDaysStandardGrade = tmp.TestProgressAvgDiffDaysStandard * TEST_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.TestProgressAvgDiffDaysStandardGrade
 			kpiGrades[account] = tmp
 		}

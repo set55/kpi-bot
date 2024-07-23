@@ -8,21 +8,24 @@ import (
 )
 
 type (
-	// 软件研发项目进度达成率
+	// 软件研发项目进度延时率
 	QueryRdProjectProgressResult struct {
-		Account         string  // 禅道账号
-		AvgDiffExpect   float64 // 平均项目进度预估天数差值
-		AvgDiffStandard float64 // 项目进度达成基数
+		Account string // 禅道账号
+		// AvgDiffExpect   float64 // 平均项目进度预估天数差值
+		SumPlanDiffDays float64 // 總项目进度预估天数差值
+		SumRealDiffDays float64 // 總项目进度实际天数差值
 	}
 
-	// 软件研发项目进度达成率-完成情况
+	// 软件研发项目进度延时率-完成情况
 	QueryRdProjectProgressDetailResult struct {
-		Account     string // 禅道账号
-		ProjectName string // 项目名称
-		SprintName  string // 冲刺名称
-		End         string // 计划结束时间
-		RealEnd     string // 实际结束时间
-		DiffDays    int    // 与预期相差天数
+		Account     string  // 禅道账号
+		ProjectId   int     // 项目id
+		ProjectName string  // 项目名称
+		Begin       string  // 计划开始时间
+		End         string  // 计划结束时间
+		RealEnd     string  // 实际结束时间
+		PlanDiff    float64 // 计划天数差值
+		RealDiff    float64 // 实际天数差值
 	}
 
 	// 需求达成率
@@ -93,9 +96,9 @@ type (
 
 	// 测试软件项目进度达成率
 	QueryTestProjectProgressResult struct {
-		Account          string  // 禅道账号
-		AvgDiffDays      float64 // 平均测试进度预估天数差值
-		DiffDaysStandard float64 // 测试进度达成基数
+		Account             string  // 禅道账号
+		SumRealTestDiffDays float64 // 總測試进度实际天数差值
+		SumTestDiffDays     float64 // 總测试进度預估天数差值
 	}
 
 	//测试软件项目有效bug率
@@ -122,11 +125,14 @@ type (
 		CaseBugStandard float64 // 用例发现bug率基数
 	}
 
-	// 项目软件项目进度达成率和预估承诺达成率
+	// 项目软件项目进度达成率
 	QueryProjectProgressResult struct {
-		Account          string  // 禅道账号
-		AvgDiffDays      float64 // 平均项目进度预估天数差值
-		ProgressStandard float64 // 项目进度达成基数
+		Account string // 禅道账号
+		// AvgDiffDays      float64 // 平均项目进度预估天数差值
+		SumRealProjectDiff float64 // 總项目进度实际天数差值
+		SumProjectDiff     float64 // 總项目进度預估天数差值
+		SumRealTestDiff    float64 // 總测试进度实际天数差值
+		SumTestDiff        float64 // 總测试进度預估天数差值
 	}
 
 	// 项目软件进度完成情况
@@ -135,12 +141,13 @@ type (
 		ProjectId      int64  // 项目id
 		ProjectName    string // 项目名称
 		ProjectType    string // 项目类型
+		ProjectBegin   string // 项目开始时间
 		ProjectEnd     string // 项目预估结束时间
 		ProjectRealEnd string // 项目实际结束时间
 		ProjectDiff    int    // 与预期相差天数
 		TestStart      string // 测试开始时间
 		TestEnd        string // 测试结束时间
-		TestDiff       int    // 测试与预期相差天数
+		TestRealEnd    string // 测试实际结束时间
 	}
 
 	// 项目软件进度完成情况
@@ -149,9 +156,9 @@ type (
 		ProjectId      int64  // 项目id
 		ProjectName    string // 项目名称
 		ProjectType    string // 项目类型
+		ProjectBegin   string // 项目开始时间
 		ProjectEnd     string // 项目预估结束时间
 		ProjectRealEnd string // 项目实际结束时间
-		ProjectDiff    int    // 与预期相差天数
 	}
 
 	// 项目成果完成率,不需要关注执行，只需要看项目需求完成度，因为有执行一定有项目
@@ -200,22 +207,13 @@ type (
 	}
 )
 
-// 软件研发项目进度达成率
+// 软件研发项目进度延时率
 func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryRdProjectProgressResult {
 	results := map[string]QueryRdProjectProgressResult{}
 	sqlCmd := fmt.Sprintf(`
-		select tmp.account, AVG(tmp.diff_expect) as avg_diff_expect, 
-		case 
-		when AVG(tmp.diff_expect) <= -8 then 1.8
-		when AVG(tmp.diff_expect) > -8 and AVG(tmp.diff_expect) <= -6 then 1.5
-		when AVG(tmp.diff_expect) > -6 and AVG(tmp.diff_expect) <= -3 then 1.2
-		when AVG(tmp.diff_expect) > -3 and AVG(tmp.diff_expect) <= 0 then 1.0
-		when AVG(tmp.diff_expect) > 0 and AVG(tmp.diff_expect) <= 2 then 0.8
-		when AVG(tmp.diff_expect) > 2 and AVG(tmp.diff_expect) <= 4 then 0.6
-		when AVG(tmp.diff_expect) > 4 and AVG(tmp.diff_expect) <= 6 then 0.5
-		else 0 end as avg_diff_expect_standard
+		select tmp.account, SUM(tmp.plan_diff) as sum_plan_diff, SUM(tmp.real_diff) as sum_real_diff
 		from (
-		select a.account,c.name ,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_expect
+		select a.account,c.name, c.begin ,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.begin,c.end) as plan_diff, TIMESTAMPDIFF(DAY,c.begin,c.realEnd) as real_diff
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
 		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private") and openedBy in ("shawn.wang", "qixiaofeng", "guoqiao.chen")
@@ -236,25 +234,25 @@ func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime st
 		var result QueryRdProjectProgressResult
 		err = rows.Scan(
 			&result.Account,
-			&result.AvgDiffExpect,
-			&result.AvgDiffStandard,
+			&result.SumPlanDiffDays,
+			&result.SumRealDiffDays,
 		)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, AvgDiffExpect: %f, AvgDiffStandard: %f\n", result.Account, result.AvgDiffExpect, result.AvgDiffStandard)
+		fmt.Printf("Account: %s, SumPlanDiffDays: %f, SumRealDiffDays: %f\n", result.Account, result.SumPlanDiffDays, result.SumRealDiffDays)
 
 		results[result.Account] = result
 	}
 	return results
 }
 
-// 软件研发项目进度达成率-完成情况
+// 软件研发项目进度延时率-完成情况
 func QueryRdProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryRdProjectProgressDetailResult {
 	results := map[string][]QueryRdProjectProgressDetailResult{}
 	sqlCmd := fmt.Sprintf(`
-		select a.account, c.id as project_name ,c.name as project_sprint_name,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.end,c.realEnd) as diff_day
+		select a.account, c.id as project_id ,c.name as project_name, c.begin , c.end, c.realEnd, TIMESTAMPDIFF(DAY,c.begin,c.end) as plan_diff, TIMESTAMPDIFF(DAY,c.begin,c.realEnd) as real_diff
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
 		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private") and openedBy in ("shawn.wang", "qixiaofeng", "guoqiao.chen")
@@ -272,17 +270,19 @@ func QueryRdProjectProgressDetail(db *sql.DB, accounts []string, startTime, endT
 		var result QueryRdProjectProgressDetailResult
 		err = rows.Scan(
 			&result.Account,
+			&result.ProjectId,
 			&result.ProjectName,
-			&result.SprintName,
+			&result.Begin,
 			&result.End,
 			&result.RealEnd,
-			&result.DiffDays,
+			&result.PlanDiff,
+			&result.RealDiff,
 		)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, ProjectName: %s, SprintName: %s, End: %s, RealEnd: %s, DiffDays: %d\n", result.Account, result.ProjectName, result.SprintName, result.End, result.RealEnd, result.DiffDays)
+		fmt.Printf("Account: %s, ProjectId: %v, ProjectName: %s, Begin: %v, End: %v, RealEnd: %v, PlanDiff: %v, RealDiff: %v\n", result.Account, result.ProjectId, result.ProjectName, result.Begin, result.End, result.RealEnd, result.PlanDiff, result.RealDiff)
 
 		results[result.Account] = append(results[result.Account], result)
 	}
@@ -719,19 +719,10 @@ func QueryRdPubTimesDetail(db *sql.DB, accounts []string, startTime, endTime str
 func QueryTestProjectProgress(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryTestProjectProgressResult {
 	results := map[string]QueryTestProjectProgressResult{}
 	sqlCmd := fmt.Sprintf(`
-		select tmp.account,AVG(tmp.diff_days) as avg_diff_days,
-		case 
-			when AVG(tmp.diff_days) <= -8 then 1.8
-			when AVG(tmp.diff_days) > -8 and AVG(tmp.diff_days) <= -6 then 1.5
-			when AVG(tmp.diff_days) > -6 and AVG(tmp.diff_days) <= -3 then 1.2
-			when AVG(tmp.diff_days) > -3 and AVG(tmp.diff_days) <= 0 then "1.0"
-			when AVG(tmp.diff_days) > 0 and AVG(tmp.diff_days) <= 2 then "0.8"
-			when AVG(tmp.diff_days) > 2 and AVG(tmp.diff_days) <= 4 then "0.6"
-			when AVG(tmp.diff_days) > 4 and AVG(tmp.diff_days) <= 5 then "0.5"
-			else "0" end as progress
+		select tmp.account,SUM(tmp.real_diff) as avg_real_diff, SUM(tmp.test_diff) as avg_test_diff
 		from (
 		select 
-		a.account,c.name,b.title,c.end,b.end as real_end,TIMESTAMPDIFF(DAY,c.end,b.end) as diff_days
+		a.account,c.name,b.title, c.begin,c.end,b.end as real_end, TIMESTAMPDIFF(DAY,c.begin,b.end) as real_diff, TIMESTAMPDIFF(DAY,c.begin,c.end) as test_diff
 		from zt_user a
 		inner join zt_testreport b on b.createdBy = a.account and b.end between "%s" and "%s" and b.deleted ="0"
 		inner join zt_testtask c on c.id = b.tasks
@@ -749,14 +740,14 @@ func QueryTestProjectProgress(db *sql.DB, accounts []string, startTime, endTime 
 		var result QueryTestProjectProgressResult
 		err = rows.Scan(
 			&result.Account,
-			&result.AvgDiffDays,
-			&result.DiffDaysStandard,
+			&result.SumRealTestDiffDays,
+			&result.SumTestDiffDays,
 		)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, AvgDiffDays: %f, DiffDaysStandard: %f\n", result.Account, result.AvgDiffDays, result.DiffDaysStandard)
+		fmt.Printf("Account: %s, SumRealTestDiffDays: %v, SumTestDiffDays: %v\n", result.Account, result.SumRealTestDiffDays, result.SumTestDiffDays)
 
 		results[result.Account] = result
 	}
@@ -906,17 +897,11 @@ func QueryTestBugCaseRate(db *sql.DB, accounts []string, startTime, endTime stri
 func QueryProjectProgress(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryProjectProgressResult {
 	results := map[string]QueryProjectProgressResult{}
 	sqlCmd := fmt.Sprintf(`
-		select account ,((AVG(project_diff) + AVG(test_diff))/2) as avg_diff_days,
-		case 
-			when ((AVG(project_diff) + AVG(test_diff))/2) <= -3 then 1.2
-			when ((AVG(project_diff) + AVG(test_diff))/2) > -3 and ((AVG(project_diff) + AVG(test_diff))/2) <= 0 then 1.0
-			when ((AVG(project_diff) + AVG(test_diff))/2) > 0 and ((AVG(project_diff) + AVG(test_diff))/2) <= 2 then 0.8
-			when ((AVG(project_diff) + AVG(test_diff))/2) > 2 and ((AVG(project_diff) + AVG(test_diff))/2) <= 4 then 0.6
-			when ((AVG(project_diff) + AVG(test_diff))/2) > 4 and ((AVG(project_diff) + AVG(test_diff))/2) <= 5 then 0.5
-			else 0 end as progress_standard
+		select account, SUM(project_diff) as sum_project_diff, SUM(real_project_diff) as sum_real_project_diff, SUM(test_diff) as sum_test_diff, SUM(real_test_diff) as sum_real_test_diff
 		from ( 
-			select a.account,b.id,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff,
-			d.end as test_start, c.end as test_end,TIMESTAMPDIFF(DAY,c.end,d.end) as test_diff
+			select a.account, b.id, b.name, b.type, b.begin as project_begin, b.end as project_end, b.realEnd as project_real_end,
+			TIMESTAMPDIFF(DAY,b.begin,b.end) as project_diff, TIMESTAMPDIFF(DAY,b.begin,b.realEnd) as real_project_diff,
+			d.begin as test_begin, d.end as test_end, c.end as test_real_end ,TIMESTAMPDIFF(DAY,d.begin,d.end) as test_diff, TIMESTAMPDIFF(DAY,d.begin,c.end) as real_test_diff
 			from zt_user a 
 			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s"
 			inner join zt_testreport c on (b.type="sprint" and c.execution = b.id) or (c.execution=0 and b.type="project" and c.project=b.id) 
@@ -935,14 +920,16 @@ func QueryProjectProgress(db *sql.DB, accounts []string, startTime, endTime stri
 		var result QueryProjectProgressResult
 		err = rows.Scan(
 			&result.Account,
-			&result.AvgDiffDays,
-			&result.ProgressStandard,
+			&result.SumProjectDiff,
+			&result.SumRealProjectDiff,
+			&result.SumTestDiff,
+			&result.SumRealTestDiff,
 		)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, AvgDiffDays: %f, ProgressStandard: %f\n", result.Account, result.AvgDiffDays, result.ProgressStandard)
+		fmt.Printf("Account: %s, SumProjectDiff: %v, SumRealProjectDiff: %v, SumTestDiff: %v, SumRealTestDiff: %v\n", result.Account, result.SumProjectDiff, result.SumRealProjectDiff, result.SumTestDiff, result.SumRealTestDiff)
 
 		results[result.Account] = result
 	}
@@ -953,8 +940,8 @@ func QueryProjectProgress(db *sql.DB, accounts []string, startTime, endTime stri
 func QueryProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryProjectProgressDetailResult {
 	results := map[string][]QueryProjectProgressDetailResult{}
 	sqlCmd := fmt.Sprintf(`
-	select a.account,b.id,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff,
-			d.end as test_start, c.end as test_end,TIMESTAMPDIFF(DAY,c.end,d.end) as test_diff
+	select a.account,b.id,b.name,b.type, b.begin as project_begin, b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff,
+			d.begin as test_begin, d.end as test_end, c.end as test_real_end
 			from zt_user a
 			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s"
 			inner join zt_testreport c on (b.type="sprint" and c.execution = b.id) or (c.execution=0 and b.type="project" and c.project=b.id)
@@ -974,18 +961,19 @@ func QueryProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTim
 			&result.ProjectId,
 			&result.ProjectName,
 			&result.ProjectType,
+			&result.ProjectBegin,
 			&result.ProjectEnd,
 			&result.ProjectRealEnd,
 			&result.ProjectDiff,
 			&result.TestStart,
 			&result.TestEnd,
-			&result.TestDiff,
+			&result.TestRealEnd,
 		)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, ProjectId: %d, ProjectName: %s, ProjectType: %s, ProjectEnd: %s, ProjectRealEnd: %s, ProjectDiff: %d, TestStart: %s, TestEnd: %s, TestDiff: %d\n", result.Account, result.ProjectId, result.ProjectName, result.ProjectType, result.ProjectEnd, result.ProjectRealEnd, result.ProjectDiff, result.TestStart, result.TestEnd, result.TestDiff)
+		fmt.Printf("Account: %s, ProjectId: %d, ProjectName: %s, ProjectType: %s, ProjectEnd: %s, ProjectRealEnd: %s, ProjectDiff: %d, TestStart: %s, TestEnd: %s\n", result.Account, result.ProjectId, result.ProjectName, result.ProjectType, result.ProjectEnd, result.ProjectRealEnd, result.ProjectDiff, result.TestStart, result.TestEnd)
 
 		results[result.Account] = append(results[result.Account], result)
 	}
@@ -996,16 +984,9 @@ func QueryProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTim
 func QueryProjectProgressWithout(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryProjectProgressResult {
 	results := map[string]QueryProjectProgressResult{}
 	sqlCmd := fmt.Sprintf(`
-		select account ,AVG(project_diff) as avg_diff_days,
-		case 
-			when AVG(project_diff) <= -3 then 1.2
-			when AVG(project_diff) > -3 and AVG(project_diff) <= 0 then 1.0
-			when AVG(project_diff) > 0 and AVG(project_diff) <= 2 then 0.8
-			when AVG(project_diff) > 2 and AVG(project_diff) <= 4 then 0.6
-			when AVG(project_diff) > 4 and AVG(project_diff) <= 5 then 0.5
-			else 0 end as progress_standard
+		select account, SUM(real_project_diff) as sum_real_diff, SUM(project_diff) as sum_project_diff
 		from ( 
-			select a.account,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff
+			select a.account,b.name,b.type, b.begin as project_begin,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.begin,b.end) as project_diff, TIMESTAMPDIFF(DAY,b.begin,b.realEnd) as real_project_diff
 			from zt_user a 
 			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s"
 			where a.account in (%s) 
@@ -1022,14 +1003,14 @@ func QueryProjectProgressWithout(db *sql.DB, accounts []string, startTime, endTi
 		var result QueryProjectProgressResult
 		err = rows.Scan(
 			&result.Account,
-			&result.AvgDiffDays,
-			&result.ProgressStandard,
+			&result.SumRealProjectDiff,
+			&result.SumProjectDiff,
 		)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, AvgDiffDays: %f, ProgressStandard: %f\n", result.Account, result.AvgDiffDays, result.ProgressStandard)
+		fmt.Printf("Account: %s, SumRealProjectDiff: %f, SumProjectDiff: %f\n", result.Account, result.SumRealProjectDiff, result.SumProjectDiff)
 
 		results[result.Account] = result
 	}
@@ -1040,7 +1021,7 @@ func QueryProjectProgressWithout(db *sql.DB, accounts []string, startTime, endTi
 func QueryProjectProgressDetailWithoutTestReport(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryProjectProgressDetailResultWithoutTestReport {
 	results := map[string][]QueryProjectProgressDetailResultWithoutTestReport{}
 	sqlCmd := fmt.Sprintf(`
-	select a.account,b.id,b.name,b.type,b.end as project_end,b.realEnd as project_real_end,TIMESTAMPDIFF(DAY,b.end,b.realEnd) as project_diff
+	select a.account,b.id,b.name,b.type, b.begin, b.end as project_end,b.realEnd as project_real_end
 			from zt_user a
 			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s"
 			where a.account in (%s)
@@ -1058,15 +1039,15 @@ func QueryProjectProgressDetailWithoutTestReport(db *sql.DB, accounts []string, 
 			&result.ProjectId,
 			&result.ProjectName,
 			&result.ProjectType,
+			&result.ProjectBegin,
 			&result.ProjectEnd,
 			&result.ProjectRealEnd,
-			&result.ProjectDiff,
 		)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, ProjectId: %d, ProjectName: %s, ProjectType: %s, ProjectEnd: %s, ProjectRealEnd: %s, ProjectDiff: %d\n", result.Account, result.ProjectId, result.ProjectName, result.ProjectType, result.ProjectEnd, result.ProjectRealEnd, result.ProjectDiff)
+		fmt.Printf("Account: %s, ProjectId: %d, ProjectName: %s, ProjectType: %s, ProjectBegin: %v, ProjectEnd: %s, ProjectRealEnd: %s\n", result.Account, result.ProjectId, result.ProjectName, result.ProjectType, result.ProjectBegin, result.ProjectEnd, result.ProjectRealEnd)
 
 		results[result.Account] = append(results[result.Account], result)
 	}

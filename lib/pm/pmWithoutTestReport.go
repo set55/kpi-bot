@@ -2,7 +2,9 @@ package pm
 
 import (
 	"database/sql"
+	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
+	"kpi-bot/lib/rd"
 )
 
 
@@ -46,7 +48,9 @@ type (
 		EndTime   string // 结束时间
 
 		// 项目软件项目进度达成率
-		ProgressAvgDiffDays float64 // 平均项目进度预估天数差值
+		SumRealProjectDiff    float64 // 项目实际结束天數
+		SumProjectDiff        float64 // 项目预估结束天数
+		DiffRate              float64 // 平均项目进度延时率
 		ProgressStandard float64 // 项目进度达成基数
 		ProgressStandardGrade float64 // 项目进度达成率 实际分数
 
@@ -90,9 +94,9 @@ type (
 		ProjectId      int64  // 项目id
 		ProjectName    string // 项目名称
 		ProjectType    string // 项目类型
+		ProjectBegin  string // 项目开始时间
 		ProjectEnd     string // 项目预估结束时间
 		ProjectRealEnd string // 项目实际结束时间
-		ProjectDiff    int    // 与预期相差天数
 	}
 
 	ProjectCompleteInfoWithoutTestReport struct {
@@ -129,9 +133,11 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	for account, result := range progressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
-			tmp.ProgressAvgDiffDays = result.AvgDiffDays
-			tmp.ProgressStandard = result.ProgressStandard
-			tmp.ProgressStandardGrade = result.ProgressStandard * PROJECT_PROGRESS_STANDARD
+			tmp.SumProjectDiff = result.SumProjectDiff
+			tmp.SumRealProjectDiff = result.SumRealProjectDiff
+			tmp.DiffRate = common.GetProjectProgressExpectRate(tmp.SumProjectDiff, tmp.SumRealProjectDiff)
+			tmp.ProgressStandard = rd.GetRdProjectProgressStandard(tmp.DiffRate)
+			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.ProgressStandardGrade
 			kpiGrades[account] = tmp
 		}
@@ -148,9 +154,9 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 					ProjectId:      r.ProjectId,
 					ProjectName:    r.ProjectName,
 					ProjectType:    r.ProjectType,
+					ProjectBegin:  r.ProjectBegin,
 					ProjectEnd:     r.ProjectEnd,
 					ProjectRealEnd: r.ProjectRealEnd,
-					ProjectDiff:    r.ProjectDiff,
 				})
 			}
 			kpiGrades[account] = tmp

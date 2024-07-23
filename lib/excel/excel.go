@@ -42,16 +42,16 @@ func MakeRdExcel(path string, data rd.RdKpiGrade) error {
 	// F2. 考评人：xxxx
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
-	// G4. 项目进度达成率 完成情况
-	projectDetail := fmt.Sprintf("平均差值天数：%v\n\n", data.AvgDiffExpect)
-	projectDetail += "项目名称/冲刺名称/预期结束时间/实际结束时间/差值\n\n"
+	// G4. 项目进度延时率 完成情况
+	projectDetail := fmt.Sprintf("平均项目延时率：%v\n\n", data.AvgDiffRate)
+	projectDetail += "项目id/项目名称/计划开始时间/计划结束时间/实际结束时间/计划天数差值/实际天数差值\n\n"
 
 	for _, v := range data.ProjectProgressList {
-		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.ProjectName, v.SprintName, v.End, v.RealEnd, v.DiffDays)
+		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.Begin, v.End, v.RealEnd, v.PlanDiff, v.RealDiff)
 	}
 	f.SetCellValue("Sheet1", "G4", projectDetail)
 
-	// H4. 项目进度达成率 最终得分
+	// H4. 项目进度延时率 最终得分
 	f.SetCellValue("Sheet1", "H4", data.AvgProgressStandardGrade)
 
 	// G5. 需求达成率 完成情况
@@ -158,10 +158,11 @@ func MakeRdWithoutTestreportExcel(path string, data rd.RdWithoutTestReportKpiGra
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
 	// G4. 项目进度达成率 完成情况
-	projectDetail := fmt.Sprintf("平均差值天数：%v\n\n", data.AvgDiffExpect)
-	projectDetail += "项目名称/冲刺名称/预期结束时间/实际结束时间/差值\n\n"
+	projectDetail := fmt.Sprintf("平均项目延时率：%v\n\n", data.AvgDiffRate)
+	projectDetail += "项目id/项目名称/计划开始时间/计划结束时间/实际结束时间/计划天数差值/实际天数差值\n\n"
+
 	for _, v := range data.ProjectProgressList {
-		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.ProjectName, v.SprintName, v.End, v.RealEnd, v.DiffDays)
+		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.Begin, v.End, v.RealEnd, v.PlanDiff, v.RealDiff)
 	}
 	f.SetCellValue("Sheet1", "G4", projectDetail)
 
@@ -261,10 +262,10 @@ func MakePmExcel(path string, data pm.PmKpiGrade) error {
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
 	// G4. 项目进度达成率 完成情况
-	projectDetail := fmt.Sprintf("平均差值天数：%v\n\n", data.ProgressAvgDiffDays)
-	projectDetail += "项目id/项目标题/项目类型/项目预估结束时间/项目实际结束时间/预估实际天数差值/测试开始时间/测试结束时间/测试天数差值\n\n"
+	projectDetail := fmt.Sprintf("延時率：%v\n\n", data.DiffRate)
+	projectDetail += "项目id/项目标题/项目类型/项目开始时间/项目预估结束时间/项目实际结束时间/测试开始时间/测试预估结束时间/测试实际结束时间\n\n"
 	for _, v := range data.ProjectProgressList {
-		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.ProjectType, v.ProjectEnd, v.ProjectRealEnd, v.ProjectDiff, v.TestStart, v.TestEnd, v.TestDiff)
+		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.ProjectType, v.ProjectBegin, v.ProjectEnd, v.ProjectRealEnd, v.TestStart, v.TestEnd, v.TestRealEnd)
 	}
 	f.SetCellValue("Sheet1", "G4", projectDetail)
 
@@ -373,10 +374,10 @@ func MakePmExcelWithoutTestReport(path string, data pm.PmKpiGradeWithoutTestRepo
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
 	// G4. 项目进度达成率 完成情况
-	projectDetail := fmt.Sprintf("平均差值天数：%v\n\n", data.ProgressAvgDiffDays)
-	projectDetail += "项目id/项目标题/项目类型/项目预估结束时间/项目实际结束时间/预估实际天数差值\n\n"
+	projectDetail := fmt.Sprintf("延時率：%v\n\n", data.DiffRate)
+	projectDetail += "项目id/项目标题/项目类型/项目开始时间/项目预估结束时间/项目实际结束时间\n\n"
 	for _, v := range data.ProjectProgressList {
-		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.ProjectType, v.ProjectEnd, v.ProjectRealEnd, v.ProjectDiff)
+		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.ProjectType, v.ProjectBegin, v.ProjectEnd, v.ProjectRealEnd)
 	}
 	f.SetCellValue("Sheet1", "G4", projectDetail)
 
@@ -485,7 +486,7 @@ func MakeTestExcel(path string, data test.TestKpiGrade) error {
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
 	// G4. 项目进度达成率 完成情况
-	f.SetCellValue("Sheet1", "G4", fmt.Sprintf("平均差值天数: %v", data.TestProgressAvgDiffDays))
+	f.SetCellValue("Sheet1", "G4", fmt.Sprintf("延時率: %v", data.DiffRate))
 
 	// H4. 项目进度达成率 最终得分
 	f.SetCellValue("Sheet1", "H4", data.TestProgressAvgDiffDaysStandardGrade)

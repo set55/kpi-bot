@@ -2,11 +2,12 @@ package rd
 
 import (
 	"database/sql"
+	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
 )
 
 const (
-	// 项目进度达成率 分值
+	// 项目进度延时率 分值
 	PROJECT_PROGRESS_STANDARD_WITHOUT_TESTREPORT = 30
 
 	// 需求完成率 分值
@@ -33,9 +34,12 @@ type (
 		StartTime string // 开始时间
 		EndTime   string // 结束时间
 
-		// 项目进度达成率
-		AvgDiffExpect            float64               // 平均项目进度预估天数差值
-		AvgProgressStandard      float64               // 项目进度达成基数
+		// 项目进度延时率
+		// AvgDiffExpect            float64               // 平均项目进度预估天数差值
+		SumPlanDiffDays          float64               // 平均项目进度预估天数差值
+		SumRealDiffDays          float64               // 平均项目进度实际天数差值
+		AvgDiffRate              float64               // 平均项目进度延时率
+		AvgProgressStandard      float64               // 项目进度延时率基数
 		AvgProgressStandardGrade float64               // 项目进度达成率 实际分数
 		ProjectProgressList      []ProjectProgressInfo // 项目进度达成率 详情
 
@@ -96,9 +100,11 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	for account, result := range projectProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
-			tmp.AvgDiffExpect = result.AvgDiffExpect
-			tmp.AvgProgressStandard = result.AvgDiffStandard
-			tmp.AvgProgressStandardGrade = result.AvgDiffStandard * PROJECT_PROGRESS_STANDARD_WITHOUT_TESTREPORT
+			tmp.SumPlanDiffDays = result.SumPlanDiffDays
+			tmp.SumRealDiffDays = result.SumRealDiffDays
+			tmp.AvgDiffRate = common.GetProjectProgressExpectRate(result.SumPlanDiffDays, result.SumRealDiffDays)
+			tmp.AvgProgressStandard = GetRdProjectProgressStandard(tmp.AvgDiffRate)
+			tmp.AvgProgressStandardGrade = tmp.AvgProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.AvgProgressStandardGrade
 			kpiGrades[account] = tmp
 		}
@@ -111,11 +117,13 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 			tmp := kpiGrades[account]
 			for _, r := range result {
 				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfo{
+					ProjectId:  r.ProjectId,
 					ProjectName: r.ProjectName,
-					SprintName:  r.SprintName,
-					End:         r.End,
-					RealEnd:     r.RealEnd,
-					DiffDays:    r.DiffDays,
+					Begin:      r.Begin,
+					End:        r.End,
+					RealEnd:    r.RealEnd,
+					PlanDiff:   r.PlanDiff,
+					RealDiff:   r.RealDiff,
 				})
 			}
 			kpiGrades[account] = tmp
@@ -203,7 +211,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 结算系数
-	for account, _ := range kpiGrades {
+	for account := range kpiGrades {
 		tmp := kpiGrades[account]
 		// if len(tmp.BugInfoList) == 0 {
 		// 	tmp.TotalGrade -= tmp.BugCarryStandardGrade

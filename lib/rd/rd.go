@@ -2,11 +2,12 @@ package rd
 
 import (
 	"database/sql"
+	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
 )
 
 const (
-	// 项目进度达成率 分值
+	// 项目进度延时率 分值
 	PROJECT_PROGRESS_STANDARD = 30
 
 	// 需求完成率 分值
@@ -25,6 +26,13 @@ const (
 	TOP_COEFFICIENT    = 1.2
 	SECOND_COEFFICIENT = 1.0
 	THIRD_COEFFICIENT  = 0.7
+
+	// 项目进度延时率基数
+	PROJECT_PROGRESS_Level1 = 1.5
+	PROJECT_PROGRESS_Level2 = 1.2
+	PROJECT_PROGRESS_Level3 = 1
+	PROJECT_PROGRESS_Level4 = 0.5
+
 )
 
 type (
@@ -41,9 +49,12 @@ type (
 		StartTime string // 开始时间
 		EndTime   string // 结束时间
 
-		// 项目进度达成率
-		AvgDiffExpect            float64               // 平均项目进度预估天数差值
-		AvgProgressStandard      float64               // 项目进度达成基数
+		// 项目进度延时率
+		// AvgDiffExpect            float64               // 平均项目进度预估天数差值
+		SumPlanDiffDays          float64               // 平均项目进度预估天数差值
+		SumRealDiffDays          float64               // 平均项目进度实际天数差值
+		AvgDiffRate              float64               // 平均项目进度延时率
+		AvgProgressStandard      float64               // 项目进度延时率基数
 		AvgProgressStandardGrade float64               // 项目进度达成率 实际分数
 		ProjectProgressList      []ProjectProgressInfo // 项目进度达成率 详情
 
@@ -76,11 +87,13 @@ type (
 	}
 
 	ProjectProgressInfo struct {
-		ProjectName string // 项目名称
-		SprintName  string // 冲刺名称
-		End         string // 计划结束时间
-		RealEnd     string // 实际结束时间
-		DiffDays    int    // 与预期相差天数
+		ProjectId   int  // 项目id
+		ProjectName string  // 项目名称
+		Begin       string  // 计划开始时间
+		End         string  // 计划结束时间
+		RealEnd     string  // 实际结束时间
+		PlanDiff    float64 // 计划天数差值
+		RealDiff    float64 // 实际天数差值
 	}
 
 	StoryInfo struct {
@@ -137,9 +150,11 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	for account, result := range projectProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
-			tmp.AvgDiffExpect = result.AvgDiffExpect
-			tmp.AvgProgressStandard = result.AvgDiffStandard
-			tmp.AvgProgressStandardGrade = result.AvgDiffStandard * PROJECT_PROGRESS_STANDARD
+			tmp.SumPlanDiffDays = result.SumPlanDiffDays
+			tmp.SumRealDiffDays = result.SumRealDiffDays
+			tmp.AvgDiffRate = common.GetProjectProgressExpectRate(result.SumPlanDiffDays, result.SumRealDiffDays)
+			tmp.AvgProgressStandard = GetRdProjectProgressStandard(tmp.AvgDiffRate)
+			tmp.AvgProgressStandardGrade = tmp.AvgProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.AvgProgressStandardGrade
 			kpiGrades[account] = tmp
 		}
@@ -152,11 +167,13 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 			tmp := kpiGrades[account]
 			for _, r := range result {
 				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfo{
+					ProjectId:  r.ProjectId,
 					ProjectName: r.ProjectName,
-					SprintName:  r.SprintName,
-					End:         r.End,
-					RealEnd:     r.RealEnd,
-					DiffDays:    r.DiffDays,
+					Begin:      r.Begin,
+					End:        r.End,
+					RealEnd:    r.RealEnd,
+					PlanDiff:   r.PlanDiff,
+					RealDiff:   r.RealDiff,
 				})
 			}
 			kpiGrades[account] = tmp
@@ -286,7 +303,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 结算系数
-	for account, _ := range kpiGrades {
+	for account := range kpiGrades {
 		tmp := kpiGrades[account]
 		// if len(tmp.BugInfoList) == 0 {
 		// 	tmp.TotalGrade -= tmp.BugCarryStandardGrade
@@ -309,4 +326,18 @@ func (l *RdKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
 		return THIRD_COEFFICIENT
 	}
 	return 0
+}
+
+func GetRdProjectProgressStandard(avgDiffRate float64) float64 {
+	if avgDiffRate <= -0.5 {
+		return PROJECT_PROGRESS_Level1
+	} else if avgDiffRate > -0.5 && avgDiffRate <= -0.2 {
+		return PROJECT_PROGRESS_Level2
+	}else if avgDiffRate > -0.2 && avgDiffRate <= 0 {
+		return PROJECT_PROGRESS_Level3
+	} else if avgDiffRate > 0 && avgDiffRate <= 0.2 {
+		return PROJECT_PROGRESS_Level4
+	} else {
+		return 0
+	}
 }

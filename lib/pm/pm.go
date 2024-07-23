@@ -2,9 +2,10 @@ package pm
 
 import (
 	"database/sql"
+	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
+	"kpi-bot/lib/rd"
 )
-
 
 const (
 	// 项目软件项目进度达成率 分值
@@ -15,9 +16,9 @@ const (
 
 	// 项目规划需求数 分值
 	PROJECT_STORY_NUM_STANDARD = 20
-	PROJECTED_STORY_STANDARD = 0.5
-	DEVELOPED_STORY_STANDARD = 1
-	CLOSED_STORY_STANDARD = 1
+	PROJECTED_STORY_STANDARD   = 0.5
+	DEVELOPED_STORY_STANDARD   = 1
+	CLOSED_STORY_STANDARD      = 1
 
 	// 预估承诺完成率 分值
 	PROJECT_ESTIMATE_STANDARD = 0
@@ -26,17 +27,17 @@ const (
 	TIME_ESTIMATE_STANDARD = 30
 
 	// 系数
-	TOP_COEFFICIENT = 1.2
+	TOP_COEFFICIENT    = 1.2
 	SECOND_COEFFICIENT = 1.0
-	THIRD_COEFFICIENT = 0.7
+	THIRD_COEFFICIENT  = 0.7
 )
 
 type (
 	PmKpi struct {
-		Accounts []string // pm的账号
-		Db       *sql.DB  // 数据库连接
-		StartTime string // 开始时间
-		EndTime string // 结束时间
+		Accounts  []string // pm的账号
+		Db        *sql.DB  // 数据库连接
+		StartTime string   // 开始时间
+		EndTime   string   // 结束时间
 	}
 
 	PmKpiGrade struct {
@@ -46,41 +47,45 @@ type (
 		EndTime   string // 结束时间
 
 		// 项目软件项目进度达成率
-		ProgressAvgDiffDays float64 // 平均项目进度预估天数差值
-		ProgressStandard float64 // 项目进度达成基数
+		SumRealProjectDiff    float64 // 项目实际结束天數
+		SumProjectDiff        float64 // 项目预估结束天数
+		SumRealTestDiff       float64 // 测试实际结束天数
+		SumTestDiff           float64 // 测试预估结束天数
+		DiffRate              float64 // 平均项目进度延时率
+		ProgressStandard      float64 // 项目进度达成基数
 		ProgressStandardGrade float64 // 项目进度达成率 实际分数
 
 		// 项目软件项目进度达成率 完成情况
 		ProjectProgressList []ProjectProgressInfo
 
 		// 项目成果完成率
-		CompleteRate float64 // 项目成果完成率
-		CompleteRateStandard float64 // 项目成果完成率基数
+		CompleteRate              float64 // 项目成果完成率
+		CompleteRateStandard      float64 // 项目成果完成率基数
 		CompleteRateStandardGrade float64 // 项目成果完成率实际分数
 
 		// 项目成果完成率,完成情况
 		ProjectCompleteList []ProjectCompleteInfo
 
 		// 项目规划需求数
-		ProjectedStoryNum int // 评审完的需求数
-		DevelopedStoryNum int // 开发完的需求数
-		ClosedStoryNum int // 关闭的需求数
-		StoryNumGrade float64 // 需求数实际分数
+		ProjectedStoryNum int     // 评审完的需求数
+		DevelopedStoryNum int     // 开发完的需求数
+		ClosedStoryNum    int     // 关闭的需求数
+		StoryNumGrade     float64 // 需求数实际分数
 
 		// 预估承诺完成率
-		PromiseDiffDays float64 // 预估承诺完成率
-		PromiseStandard float64 // 预估承诺完成率基数
+		PromiseDiffDays      float64 // 预估承诺完成率
+		PromiseStandard      float64 // 预估承诺完成率基数
 		PromiseStandardGrade float64 // 预估承诺完成率实际分数
 
 		// 项目预估工时准确率
-		TimeEstimateRate float64 // 项目预估工时准确率
+		TimeEstimateRate     float64 // 项目预估工时准确率
 		TimeEstimateStandard float64 // 项目预估工时准确率基数
-		TimeEstimateGrade float64 // 项目预估工时准确率实际分数
+		TimeEstimateGrade    float64 // 项目预估工时准确率实际分数
 
 		// 项目预估工时准确率 完成情况
 		TimeEstimateList []TimeEstimateInfo
 
-		TotalGrade float64 // 总分数
+		TotalGrade         float64 // 总分数
 		TotalGradeStandard float64 // 总分数基数
 
 	}
@@ -90,16 +95,17 @@ type (
 		ProjectId      int64  // 项目id
 		ProjectName    string // 项目名称
 		ProjectType    string // 项目类型
+		ProjectBegin   string // 项目开始时间
 		ProjectEnd     string // 项目预估结束时间
 		ProjectRealEnd string // 项目实际结束时间
 		ProjectDiff    int    // 与预期相差天数
 		TestStart      string // 测试开始时间
-		TestEnd        string // 测试结束时间
-		TestDiff       int    // 测试与预期相差天数
+		TestEnd        string // 测试預估结束时间
+		TestRealEnd    string // 测试实际结束时间
 	}
 
 	ProjectCompleteInfo struct {
-		ProjectName string // 项目名称
+		ProjectName  string  // 项目名称
 		CompleteRate float64 // 项目成果完成率
 	}
 
@@ -112,16 +118,16 @@ type (
 		EstimateRate  float64 // 预估工时准确率
 	}
 )
+
 // NewPmKpi creates a new PmKpi object
 func NewPmKpi(db *sql.DB, accounts []string, startTime, endTime string) *PmKpi {
 	return &PmKpi{
-		Accounts: accounts,
-		Db:       db,
+		Accounts:  accounts,
+		Db:        db,
 		StartTime: startTime,
-		EndTime: endTime,
+		EndTime:   endTime,
 	}
 }
-
 
 // GetPmKpiGrade gets the PM KPI information
 func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
@@ -130,9 +136,9 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	// 建立所有账户啊kpi信息
 	for _, account := range l.Accounts {
 		kpiGrades[account] = PmKpiGrade{
-			Account: account,
+			Account:   account,
 			StartTime: l.StartTime,
-			EndTime: l.EndTime,
+			EndTime:   l.EndTime,
 		}
 	}
 
@@ -141,9 +147,13 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	for account, result := range progressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
-			tmp.ProgressAvgDiffDays = result.AvgDiffDays
-			tmp.ProgressStandard = result.ProgressStandard
-			tmp.ProgressStandardGrade = result.ProgressStandard * PROJECT_PROGRESS_STANDARD
+			tmp.SumRealProjectDiff = result.SumRealProjectDiff
+			tmp.SumProjectDiff = result.SumProjectDiff
+			tmp.SumRealTestDiff = result.SumRealTestDiff
+			tmp.SumTestDiff = result.SumTestDiff
+			tmp.DiffRate = common.GetProjectProgressExpectRate((tmp.SumProjectDiff + tmp.SumTestDiff), (tmp.SumRealProjectDiff + tmp.SumRealTestDiff))
+			tmp.ProgressStandard = rd.GetRdProjectProgressStandard(tmp.DiffRate)
+			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.ProgressStandardGrade
 			kpiGrades[account] = tmp
 		}
@@ -160,12 +170,13 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 					ProjectId:      r.ProjectId,
 					ProjectName:    r.ProjectName,
 					ProjectType:    r.ProjectType,
+					ProjectBegin:   r.ProjectBegin,
 					ProjectEnd:     r.ProjectEnd,
 					ProjectRealEnd: r.ProjectRealEnd,
 					ProjectDiff:    r.ProjectDiff,
 					TestStart:      r.TestStart,
 					TestEnd:        r.TestEnd,
-					TestDiff:       r.TestDiff,
+					TestRealEnd:    r.TestRealEnd,
 				})
 			}
 			kpiGrades[account] = tmp
@@ -192,7 +203,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 			tmp := kpiGrades[account]
 			for _, r := range result {
 				tmp.ProjectCompleteList = append(tmp.ProjectCompleteList, ProjectCompleteInfo{
-					ProjectName: r.ProjectName,
+					ProjectName:  r.ProjectName,
 					CompleteRate: r.CompleteRate,
 				})
 			}
@@ -272,17 +283,15 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 			kpiGrades[account] = tmp
 		}
 	}
-	
+
 	for account, kpiGrade := range kpiGrades {
 		tmp := kpiGrades[account]
 		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
 		kpiGrades[account] = tmp
 	}
 
-
 	return kpiGrades
 }
-
 
 // 计算得分系数
 func (l *PmKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
