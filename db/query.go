@@ -94,6 +94,16 @@ type (
 		LastPubTime string // 最后提测时间
 	}
 
+	// 测试软件项目进度 完成情况
+	QueryTestProjectProgressDetailResult struct {
+		Account         string // 禅道账号
+		TestTaskName    string // 测试任务名称
+		TestReportTitle string // 测试报告标题
+		TestTaskBegin   string // 测试任务开始时间
+		TestTaskEnd     string // 测试任务预估结束时间
+		TestReportEnd   string // 测试报告实际结束时间
+	}
+
 	// 测试软件项目进度达成率
 	QueryTestProjectProgressResult struct {
 		Account             string  // 禅道账号
@@ -709,6 +719,46 @@ func QueryRdPubTimesDetail(db *sql.DB, accounts []string, startTime, endTime str
 		}
 
 		fmt.Printf("Account: %s, ProjectType: %s, ProjectName: %s, PubTimes: %d, LastPubTime: %s\n", result.Account, result.ProjectType, result.ProjectName, result.PubTimes, result.LastPubTime)
+
+		results[result.Account] = append(results[result.Account], result)
+	}
+	return results
+}
+
+// 测试软件项目进度达成率 完成情况
+func QueryTestProjectProgressResultDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryTestProjectProgressDetailResult {
+	results := map[string][]QueryTestProjectProgressDetailResult{}
+	sqlCmd := fmt.Sprintf(`
+		select 
+		a.account, c.name, b.title, c.begin, c.end, b.end as real_end
+		from zt_user a
+		inner join zt_testreport b on b.createdBy = a.account and b.end between "%s" and "%s" and b.deleted ="0"
+		inner join zt_testtask c on c.id = b.tasks
+		where a.account in (%s)
+	`, startTime, endTime, common.AccountArrayToString(accounts))
+	fmt.Println(sqlCmd)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result QueryTestProjectProgressDetailResult
+		err = rows.Scan(
+			&result.Account,
+			&result.TestTaskName,
+			&result.TestReportTitle,
+			&result.TestTaskBegin,
+			&result.TestTaskEnd,
+			&result.TestReportEnd,
+		)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+
+		fmt.Printf("Account: %s, TestTaskName: %v, TestReportTitle: %v, TestTaskBegin: %v, TestTaskEnd: %v, TestReportEnd: %v\n",
+			result.Account, result.TestTaskName, result.TestReportTitle, result.TestTaskBegin, result.TestTaskEnd, result.TestReportEnd)
 
 		results[result.Account] = append(results[result.Account], result)
 	}

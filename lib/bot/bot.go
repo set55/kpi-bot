@@ -89,3 +89,27 @@ func (l *Bot) ProduceTestKpi(templatePath, startTime, endTime string, accounts [
 	}
 	return nil
 }
+
+
+
+func (l *Bot) ProduceStatisticKpi(tmplatePath, startTime, endTime string, rds, rdWithouts, pms, pmWithouts, tests []string) error {
+	rdkpiManager := rd.NewRdKpi(l.Db, rds, startTime, endTime)
+	rdWithoutKpiManager := rd.NewRdKpiWithoutTestReport(l.Db, rdWithouts, startTime, endTime)
+	pmKpiManager := pm.NewPmKpi(l.Db, pms, startTime, endTime)
+	pmWithoutKpiManager := pm.NewPmKpiWithoutTestReport(l.Db, pmWithouts, startTime, endTime)
+	testKpiManager := test.NewTestKpi(l.Db, tests, startTime, endTime)
+
+
+	rdKpiGrades := rdkpiManager.GetRdKpiGrade()
+	rdWithoutKpiGrades := rdWithoutKpiManager.GetRdKpiWithoutTestReportGrade()
+	pmKpiGrades := pmKpiManager.GetPmKpiGrade()
+	pmWithoutKpiGrades := pmWithoutKpiManager.GetPmKpiGradeWithoutTestReport()
+	testKpiGrades := testKpiManager.GetTestKpiGrade()
+
+
+	err := excel.MakeKpiStatisticsExcel(tmplatePath, startTime, rdKpiGrades, rdWithoutKpiGrades, pmKpiGrades, pmWithoutKpiGrades, testKpiGrades)
+	if err != nil {
+		return fmt.Errorf("make kpi statistics excel fail: %v", err)
+	}
+	return nil
+}

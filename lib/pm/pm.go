@@ -46,6 +46,12 @@ type (
 		StartTime string // 开始时间
 		EndTime   string // 结束时间
 
+		ProjectTotalSaturdays float64
+		ProjectTotalSundays   float64
+
+		RealTotalSaturdays float64
+		RealTotalSundays   float64
+
 		// 项目软件项目进度达成率
 		SumRealProjectDiff    float64 // 项目实际结束天數
 		SumProjectDiff        float64 // 项目预估结束天数
@@ -142,29 +148,17 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 		}
 	}
 
-	// 项目软件项目进度达成率
-	progressResult := dbQuery.QueryProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
-	for account, result := range progressResult {
-		if _, ok := kpiGrades[account]; ok {
-			tmp := kpiGrades[account]
-			tmp.SumRealProjectDiff = result.SumRealProjectDiff
-			tmp.SumProjectDiff = result.SumProjectDiff
-			tmp.SumRealTestDiff = result.SumRealTestDiff
-			tmp.SumTestDiff = result.SumTestDiff
-			tmp.DiffRate = common.GetProjectProgressExpectRate((tmp.SumProjectDiff + tmp.SumTestDiff), (tmp.SumRealProjectDiff + tmp.SumRealTestDiff))
-			tmp.ProgressStandard = rd.GetRdProjectProgressStandard(tmp.DiffRate)
-			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
-			tmp.TotalGrade += tmp.ProgressStandardGrade
-			kpiGrades[account] = tmp
-		}
-	}
-
 	// 项目软件项目进度达成率 完成情况
 	progressDetailResult := dbQuery.QueryProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range progressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			for _, r := range result {
+				planSaturdays, planSundays := common.CountWeekends(r.ProjectBegin, r.ProjectEnd)
+				realSaturdays, realSundays := common.CountWeekends(r.ProjectBegin, r.ProjectRealEnd)
+
+				testPlanSaturdays, testPlanSundays := common.CountWeekends(r.TestStart, r.TestEnd)
+				testRealSaturdays, testRealSundays := common.CountWeekends(r.TestStart, r.TestRealEnd)
 				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfo{
 					Account:        r.Account,
 					ProjectId:      r.ProjectId,
@@ -178,7 +172,30 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 					TestEnd:        r.TestEnd,
 					TestRealEnd:    r.TestRealEnd,
 				})
+
+				tmp.ProjectTotalSaturdays += float64(planSaturdays + testPlanSaturdays) / 2
+				tmp.ProjectTotalSundays += float64(planSundays + testPlanSundays)
+
+				tmp.RealTotalSaturdays += float64(realSaturdays + testRealSaturdays) / 2
+				tmp.RealTotalSundays += float64(realSundays + testRealSundays)
 			}
+			kpiGrades[account] = tmp
+		}
+	}
+
+	// 项目软件项目进度达成率
+	progressResult := dbQuery.QueryProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	for account, result := range progressResult {
+		if _, ok := kpiGrades[account]; ok {
+			tmp := kpiGrades[account]
+			tmp.SumRealProjectDiff = result.SumRealProjectDiff
+			tmp.SumProjectDiff = result.SumProjectDiff
+			tmp.SumRealTestDiff = result.SumRealTestDiff
+			tmp.SumTestDiff = result.SumTestDiff
+			tmp.DiffRate = common.GetProjectProgressExpectRate((tmp.SumProjectDiff + tmp.SumTestDiff - tmp.ProjectTotalSaturdays - tmp.ProjectTotalSundays), (tmp.SumRealProjectDiff + tmp.SumRealTestDiff - tmp.RealTotalSaturdays - tmp.RealTotalSundays))
+			tmp.ProgressStandard = rd.GetRdProjectProgressStandard(tmp.DiffRate)
+			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
+			tmp.TotalGrade += tmp.ProgressStandardGrade
 			kpiGrades[account] = tmp
 		}
 	}

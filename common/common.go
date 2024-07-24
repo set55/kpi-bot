@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 
@@ -138,4 +139,28 @@ func GetProjectProgressExpectRate(planDiff, realDiff float64) (float64) {
 	finalRealDiff := realDiff - float64(realSubstractDays)
 
 	return (finalRealDiff / finalPlanDiff) - 1
+}
+
+
+func CountWeekends(start, end string) (int, int) {
+    saturdays := 0
+    sundays := 0
+
+	layout := "2006-01-02"
+
+	startDate, _ := time.Parse(layout, start)
+	endDate, _ := time.Parse(layout, end)
+
+
+
+    // Loop through each day in the date range
+    for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+        switch d.Weekday() {
+        case time.Saturday:
+            saturdays++
+        case time.Sunday:
+            sundays++
+        }
+    }
+    return saturdays, sundays
 }

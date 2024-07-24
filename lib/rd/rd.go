@@ -31,12 +31,14 @@ const (
 	PROJECT_PROGRESS_Level1 = 1.5
 	PROJECT_PROGRESS_Level2 = 1.2
 	PROJECT_PROGRESS_Level3 = 1
-	PROJECT_PROGRESS_Level4 = 0.5
+	PROJECT_PROGRESS_Level4 = 0.8
+	PROJECT_PROGRESS_Level5 = 0.5
 
 )
 
 type (
 	RdKpi struct {
+
 		Accounts  []string // rd的账号
 		Db        *sql.DB  // 数据库连接
 		StartTime string   // 开始时间
@@ -48,6 +50,12 @@ type (
 
 		StartTime string // 开始时间
 		EndTime   string // 结束时间
+
+		ProjectTotalSaturdays float64
+		ProjectTotalSundays   float64
+
+		RealTotalSaturdays float64
+		RealTotalSundays   float64
 
 		// 项目进度延时率
 		// AvgDiffExpect            float64               // 平均项目进度预估天数差值
@@ -145,37 +153,46 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 		}
 	}
 
-	// 项目进度达成率
-	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
-	for account, result := range projectProgressResult {
-		if _, ok := kpiGrades[account]; ok {
-			tmp := kpiGrades[account]
-			tmp.SumPlanDiffDays = result.SumPlanDiffDays
-			tmp.SumRealDiffDays = result.SumRealDiffDays
-			tmp.AvgDiffRate = common.GetProjectProgressExpectRate(result.SumPlanDiffDays, result.SumRealDiffDays)
-			tmp.AvgProgressStandard = GetRdProjectProgressStandard(tmp.AvgDiffRate)
-			tmp.AvgProgressStandardGrade = tmp.AvgProgressStandard * PROJECT_PROGRESS_STANDARD
-			tmp.TotalGrade += tmp.AvgProgressStandardGrade
-			kpiGrades[account] = tmp
-		}
-	}
-
 	// 项目进度完成情况
 	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectProgressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			for _, r := range result {
+				planSaturdays, planSundays := common.CountWeekends(r.Begin, r.End)
+				realSaturdays, realSundays := common.CountWeekends(r.Begin, r.RealEnd)
+
 				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfo{
 					ProjectId:  r.ProjectId,
 					ProjectName: r.ProjectName,
 					Begin:      r.Begin,
 					End:        r.End,
 					RealEnd:    r.RealEnd,
-					PlanDiff:   r.PlanDiff,
-					RealDiff:   r.RealDiff,
+					PlanDiff:   r.PlanDiff - float64(planSaturdays + planSundays),
+					RealDiff:   r.RealDiff - float64(realSaturdays + realSundays),
 				})
+
+				tmp.ProjectTotalSaturdays += float64(planSaturdays) / 2
+				tmp.ProjectTotalSundays += float64(planSundays)
+
+				tmp.RealTotalSaturdays += float64(realSaturdays) / 2
+				tmp.RealTotalSundays += float64(realSundays)
 			}
+			kpiGrades[account] = tmp
+		}
+	}
+
+	// 项目进度达成率
+	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	for account, result := range projectProgressResult {
+		if _, ok := kpiGrades[account]; ok {
+			tmp := kpiGrades[account]
+			tmp.SumPlanDiffDays = result.SumPlanDiffDays - tmp.ProjectTotalSaturdays - tmp.ProjectTotalSundays
+			tmp.SumRealDiffDays = result.SumRealDiffDays - tmp.RealTotalSaturdays - tmp.RealTotalSundays
+			tmp.AvgDiffRate = common.GetProjectProgressExpectRate(tmp.SumPlanDiffDays, tmp.SumRealDiffDays)
+			tmp.AvgProgressStandard = GetRdProjectProgressStandard(tmp.AvgDiffRate)
+			tmp.AvgProgressStandardGrade = tmp.AvgProgressStandard * PROJECT_PROGRESS_STANDARD
+			tmp.TotalGrade += tmp.AvgProgressStandardGrade
 			kpiGrades[account] = tmp
 		}
 	}
@@ -337,6 +354,8 @@ func GetRdProjectProgressStandard(avgDiffRate float64) float64 {
 		return PROJECT_PROGRESS_Level3
 	} else if avgDiffRate > 0 && avgDiffRate <= 0.2 {
 		return PROJECT_PROGRESS_Level4
+	} else if avgDiffRate > 0.2 && avgDiffRate <= 0.5 {
+		return PROJECT_PROGRESS_Level5
 	} else {
 		return 0
 	}

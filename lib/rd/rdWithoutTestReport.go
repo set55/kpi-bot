@@ -2,6 +2,7 @@ package rd
 
 import (
 	"database/sql"
+	"fmt"
 	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
 )
@@ -33,6 +34,12 @@ type (
 
 		StartTime string // 开始时间
 		EndTime   string // 结束时间
+
+		ProjectTotalSaturdays float64
+		ProjectTotalSundays   float64
+
+		RealTotalSaturdays float64
+		RealTotalSundays   float64
 
 		// 项目进度延时率
 		// AvgDiffExpect            float64               // 平均项目进度预估天数差值
@@ -95,37 +102,47 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 		}
 	}
 
-	// 项目进度达成率
-	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
-	for account, result := range projectProgressResult {
-		if _, ok := kpiGrades[account]; ok {
-			tmp := kpiGrades[account]
-			tmp.SumPlanDiffDays = result.SumPlanDiffDays
-			tmp.SumRealDiffDays = result.SumRealDiffDays
-			tmp.AvgDiffRate = common.GetProjectProgressExpectRate(result.SumPlanDiffDays, result.SumRealDiffDays)
-			tmp.AvgProgressStandard = GetRdProjectProgressStandard(tmp.AvgDiffRate)
-			tmp.AvgProgressStandardGrade = tmp.AvgProgressStandard * PROJECT_PROGRESS_STANDARD
-			tmp.TotalGrade += tmp.AvgProgressStandardGrade
-			kpiGrades[account] = tmp
-		}
-	}
-
 	// 项目进度完成情况
 	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectProgressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			for _, r := range result {
+				planSaturdays, planSundays := common.CountWeekends(r.Begin, r.End)
+				realSaturdays, realSundays := common.CountWeekends(r.Begin, r.RealEnd)
 				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfo{
 					ProjectId:  r.ProjectId,
 					ProjectName: r.ProjectName,
 					Begin:      r.Begin,
 					End:        r.End,
 					RealEnd:    r.RealEnd,
-					PlanDiff:   r.PlanDiff,
-					RealDiff:   r.RealDiff,
+					PlanDiff:   r.PlanDiff - float64(planSaturdays + planSundays),
+					RealDiff:   r.RealDiff - float64(realSaturdays + realSundays),
 				})
+				tmp.ProjectTotalSaturdays += float64(planSaturdays) / 2
+				tmp.ProjectTotalSundays += float64(planSundays)
+
+				tmp.RealTotalSaturdays += float64(realSaturdays) / 2
+				tmp.RealTotalSundays += float64(realSundays)
 			}
+			fmt.Printf("account: %v, ProjectTotalSaturdays: %v, ProjectTotalSundays: %v, RealTotalSaturdays: %v, RealTotalSundays: %v\n", account, tmp.ProjectTotalSaturdays, tmp.ProjectTotalSundays, tmp.RealTotalSaturdays, tmp.RealTotalSundays)
+			kpiGrades[account] = tmp
+		}
+	}
+
+
+	// 项目进度达成率
+	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	for account, result := range projectProgressResult {
+		if _, ok := kpiGrades[account]; ok {
+			tmp := kpiGrades[account]
+			tmp.SumPlanDiffDays = result.SumPlanDiffDays - tmp.ProjectTotalSaturdays - tmp.ProjectTotalSundays
+			tmp.SumRealDiffDays = result.SumRealDiffDays - tmp.RealTotalSaturdays - tmp.RealTotalSundays
+			tmp.AvgDiffRate = common.GetProjectProgressExpectRate(tmp.SumPlanDiffDays, tmp.SumRealDiffDays)
+			tmp.AvgProgressStandard = GetRdProjectProgressStandard(tmp.AvgDiffRate)
+			tmp.AvgProgressStandardGrade = tmp.AvgProgressStandard * PROJECT_PROGRESS_STANDARD
+			tmp.TotalGrade += tmp.AvgProgressStandardGrade
+			fmt.Printf("account: %v, SumPlanDiffDays: %v, SumRealDiffDays: %v, AvgDiffRate: %v, AvgProgressStandard: %v, AvgProgressStandardGrade: %v, TotalGrade: %v\n", account, tmp.SumPlanDiffDays, tmp.SumRealDiffDays, tmp.AvgDiffRate, tmp.AvgProgressStandard, tmp.AvgProgressStandardGrade, tmp.TotalGrade)
 			kpiGrades[account] = tmp
 		}
 	}

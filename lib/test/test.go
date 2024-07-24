@@ -16,25 +16,23 @@ const (
 
 	// bug转需求数
 	BUG_TO_STORY_NUM_STANDARD = 30
-	BUG_ONE_GRADE = 3
+	BUG_ONE_GRADE             = 3
 
 	// 用例发现bug率
 	CASE_BUG_RATE_STANDARD = 20
 
 	// 系数
-	TOP_COEFFICIENT = 1.2
+	TOP_COEFFICIENT    = 1.2
 	SECOND_COEFFICIENT = 1.0
-	THIRD_COEFFICIENT = 0.7
-
-
+	THIRD_COEFFICIENT  = 0.7
 )
 
 type (
 	TestKpi struct {
-		Accounts []string // test的账号
-		Db       *sql.DB  // 数据库连接
-		StartTime string  // 开始时间
-		EndTime string // 结束时间
+		Accounts  []string // test的账号
+		Db        *sql.DB  // 数据库连接
+		StartTime string   // 开始时间
+		EndTime   string   // 结束时间
 	}
 
 	TestKpiGrade struct {
@@ -43,10 +41,19 @@ type (
 		StartTime string // 开始时间
 		EndTime   string // 结束时间
 
+		ProjectTotalSaturdays float64
+		ProjectTotalSundays   float64
+
+		RealTotalSaturdays float64
+		RealTotalSundays   float64
+
+		// 测试软件项目进度 完成情况
+		TestProgressInfos []TestProgressDetail
+
 		// 测试软件项目进度达成率
-		SumRealTestDiffDays              float64 // 總實際測試天數
-		SumTestDiffDays				  float64 // 總預估測試天數
-		DiffRate float64 // 平均项目进度延时率
+		SumRealTestDiffDays                  float64 // 總實際測試天數
+		SumTestDiffDays                      float64 // 總預估測試天數
+		DiffRate                             float64 // 平均项目进度延时率
 		TestProgressAvgDiffDaysStandard      float64 // 项目测试进度达成基数
 		TestProgressAvgDiffDaysStandardGrade float64 // 项目测试进度达成率 实际分数
 
@@ -54,33 +61,40 @@ type (
 		// 1、测试报告结束时间是当月的
 		// 2、bug未被删除，bug关联项目属于测试报告关联项目，bug关联版本是测试报告所属版本，bug是焰海打开的，bug解决状态是转需求，延期处理和已解决的，不予解决，这些叫有效bug。
 		// 3、版本内所有bug，为项目与测试报告相等，并且不是指派给黄卫旗
-		ValidateBugRate float64 // 有效bug率
-		ValidateBugRateStandard float64 // 有效bug率基数
+		ValidateBugRate              float64 // 有效bug率
+		ValidateBugRateStandard      float64 // 有效bug率基数
 		ValidateBugRateStandardGrade float64 // 有效bug率实际分数
 
 		// bug转需求数
-		BugToStoryNum int // bug转需求数
+		BugToStoryNum   int     // bug转需求数
 		BugToStoryGrade float64 // bug转需求数实际分数
 
 		// 用例发现bug率
-		CaseBugRate float64 // 用例发现bug率
-		CaseBugRateStandard float64 // 用例发现bug率基数
+		CaseBugRate              float64 // 用例发现bug率
+		CaseBugRateStandard      float64 // 用例发现bug率基数
 		CaseBugRateStandardGrade float64 // 用例发现bug率实际分数
 
-		TotalGrade float64 // 总分数
+		TotalGrade         float64 // 总分数
 		TotalGradeStandard float64 // 总分数基数
 	}
+
+	TestProgressDetail struct {
+		Account         string // 禅道账号
+		TestTaskName    string // 测试任务名称
+		TestReportTitle string // 测试报告标题
+		TestTaskBegin   string // 测试任务开始时间
+		TestTaskEnd     string // 测试任务预估结束时间
+		TestReportEnd   string // 测试报告实际结束时间
+	}
 )
-
-
 
 // NewTestKpi 创建一个测试KPI对象
 func NewTestKpi(db *sql.DB, accounts []string, startTime, endTime string) *TestKpi {
 	return &TestKpi{
-		Accounts: accounts,
-		Db:       db,
+		Accounts:  accounts,
+		Db:        db,
 		StartTime: startTime,
-		EndTime: endTime,
+		EndTime:   endTime,
 	}
 }
 
@@ -91,9 +105,36 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	// 建立所有账户啊kpi信息
 	for _, account := range l.Accounts {
 		kpiGrades[account] = TestKpiGrade{
-			Account: account,
+			Account:   account,
 			StartTime: l.StartTime,
-			EndTime: l.EndTime,
+			EndTime:   l.EndTime,
+		}
+	}
+
+	// 测试软件项目进度 完成情况
+	testProgressInfos := dbQuery.QueryTestProjectProgressResultDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
+
+	for account, result := range testProgressInfos {
+		if _, ok := kpiGrades[account]; ok {
+			tmp := kpiGrades[account]
+			for _, r := range result {
+				planSaturdays, planSundays := common.CountWeekends(r.TestTaskBegin, r.TestTaskEnd)
+				realSaturdays, realSundays := common.CountWeekends(r.TestTaskBegin, r.TestReportEnd)
+				tmp.TestProgressInfos = append(tmp.TestProgressInfos, TestProgressDetail{
+					Account:         r.Account,
+					TestTaskName:    r.TestTaskName,
+					TestReportTitle: r.TestReportTitle,
+					TestTaskBegin:   r.TestTaskBegin,
+					TestTaskEnd:     r.TestTaskEnd,
+					TestReportEnd:   r.TestReportEnd,
+				})
+				tmp.ProjectTotalSaturdays += float64(planSaturdays) / 2
+				tmp.ProjectTotalSundays += float64(planSundays)
+
+				tmp.RealTotalSaturdays += float64(realSaturdays) / 2
+				tmp.RealTotalSundays += float64(realSundays)
+			}
+			kpiGrades[account] = tmp
 		}
 	}
 
@@ -103,8 +144,8 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	for account, result := range testProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
-			tmp.SumRealTestDiffDays = result.SumRealTestDiffDays
-			tmp.SumTestDiffDays = result.SumTestDiffDays
+			tmp.SumRealTestDiffDays = result.SumRealTestDiffDays - tmp.RealTotalSaturdays - tmp.RealTotalSundays
+			tmp.SumTestDiffDays = result.SumTestDiffDays - tmp.ProjectTotalSaturdays - tmp.ProjectTotalSundays
 			tmp.DiffRate = common.GetProjectProgressExpectRate(tmp.SumTestDiffDays, tmp.SumRealTestDiffDays)
 			tmp.TestProgressAvgDiffDaysStandard = rd.GetRdProjectProgressStandard(tmp.DiffRate)
 			tmp.TestProgressAvgDiffDaysStandardGrade = tmp.TestProgressAvgDiffDaysStandard * TEST_PROGRESS_STANDARD
@@ -142,7 +183,6 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 		}
 	}
 
-
 	// 用例发现bug率
 	caseBugRateResult := dbQuery.QueryTestBugCaseRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range caseBugRateResult {
@@ -162,8 +202,6 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
 		kpiGrades[account] = tmp
 	}
-
-
 
 	return kpiGrades
 }

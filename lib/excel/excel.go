@@ -44,10 +44,10 @@ func MakeRdExcel(path string, data rd.RdKpiGrade) error {
 
 	// G4. 项目进度延时率 完成情况
 	projectDetail := fmt.Sprintf("平均项目延时率：%v\n\n", data.AvgDiffRate)
-	projectDetail += "项目id/项目名称/计划开始时间/计划结束时间/实际结束时间/计划天数差值/实际天数差值\n\n"
+	projectDetail += "项目id/项目名称/计划开始时间/计划结束时间/实际结束时间\n\n"
 
 	for _, v := range data.ProjectProgressList {
-		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.Begin, v.End, v.RealEnd, v.PlanDiff, v.RealDiff)
+		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.Begin, v.End, v.RealEnd)
 	}
 	f.SetCellValue("Sheet1", "G4", projectDetail)
 
@@ -159,10 +159,10 @@ func MakeRdWithoutTestreportExcel(path string, data rd.RdWithoutTestReportKpiGra
 
 	// G4. 项目进度达成率 完成情况
 	projectDetail := fmt.Sprintf("平均项目延时率：%v\n\n", data.AvgDiffRate)
-	projectDetail += "项目id/项目名称/计划开始时间/计划结束时间/实际结束时间/计划天数差值/实际天数差值\n\n"
+	projectDetail += "项目id/项目名称/计划开始时间/计划结束时间/实际结束时间\n\n"
 
 	for _, v := range data.ProjectProgressList {
-		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.Begin, v.End, v.RealEnd, v.PlanDiff, v.RealDiff)
+		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.Begin, v.End, v.RealEnd)
 	}
 	f.SetCellValue("Sheet1", "G4", projectDetail)
 
@@ -486,7 +486,12 @@ func MakeTestExcel(path string, data test.TestKpiGrade) error {
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
 	// G4. 项目进度达成率 完成情况
-	f.SetCellValue("Sheet1", "G4", fmt.Sprintf("延時率: %v", data.DiffRate))
+	projectDetail := fmt.Sprintf("延時率: %v\n\n", data.DiffRate)
+	projectDetail += "测试任务/测试报告/测试任务开始时间/测试任务计划结束时间/测试报告生成时间\n\n"
+	for _, v := range data.TestProgressInfos {
+		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.TestTaskName, v.TestReportTitle, v.TestTaskBegin, v.TestTaskEnd, v.TestReportEnd)
+	}
+	f.SetCellValue("Sheet1", "G4", projectDetail)
 
 	// H4. 项目进度达成率 最终得分
 	f.SetCellValue("Sheet1", "H4", data.TestProgressAvgDiffDaysStandardGrade)
@@ -541,5 +546,174 @@ func MakeTestExcel(path string, data test.TestKpiGrade) error {
 		return fmt.Errorf("save as %v, err: %v", filePath, err)
 	}
 	return nil
+}
 
+
+// kpi统计
+func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]rd.RdKpiGrade, rdWithoutGrades map[string]rd.RdWithoutTestReportKpiGrade,
+	pmGrades map[string]pm.PmKpiGrade, pmWithout map[string]pm.PmKpiGradeWithoutTestReport, testsGrade map[string]test.TestKpiGrade) error {
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		return fmt.Errorf("open file fail: %v", err)
+	}
+	defer f.Close()
+
+	// Parse the date string into a time.Time object
+	layout := "2006-01-02 15:04:05"
+	t, err := time.Parse(layout, startTime)
+	if err != nil {
+		return fmt.Errorf("parse time err: %v", err)
+	}
+
+	// Extract the year and month
+	year := t.Year()
+	month := t.Month()
+
+	statisticMap := map[string]int64{
+		"lower60": 0,
+		"60-69": 0,
+		"70-79": 0,
+		"80-89": 0,
+		"90-100": 0,
+		"101-110": 0,
+		"higher110": 0,
+	}
+
+	for _, v := range rdGrades {
+		grade := v.TotalGrade
+		if grade < 60 {
+			statisticMap["lower60"]++
+		} else if grade >= 60 && grade <= 69 {
+			statisticMap["60-69"]++
+		} else if grade >= 70 && grade <= 79 {
+			statisticMap["70-79"]++
+		} else if grade >= 80 && grade <= 89 {
+			statisticMap["80-89"]++
+		} else if grade >= 90 && grade <= 100 {
+			statisticMap["90-100"]++
+		} else if grade >= 101 && grade <= 110 {
+			statisticMap["101-110"]++
+		} else if grade > 110 {
+			statisticMap["higher110"]++
+		}
+	}
+
+	for _, v := range rdWithoutGrades {
+		grade := v.TotalGrade
+		if grade < 60 {
+			statisticMap["lower60"]++
+		} else if grade >= 60 && grade <= 69 {
+			statisticMap["60-69"]++
+		} else if grade >= 70 && grade <= 79 {
+			statisticMap["70-79"]++
+		} else if grade >= 80 && grade <= 89 {
+			statisticMap["80-89"]++
+		} else if grade >= 90 && grade <= 100 {
+			statisticMap["90-100"]++
+		} else if grade >= 101 && grade <= 110 {
+			statisticMap["101-110"]++
+		} else if grade > 110 {
+			statisticMap["higher110"]++
+		}
+	}
+
+	for _, v := range pmGrades {
+		grade := v.TotalGrade
+		if grade < 60 {
+			statisticMap["lower60"]++
+		} else if grade >= 60 && grade <= 69 {
+			statisticMap["60-69"]++
+		} else if grade >= 70 && grade <= 79 {
+			statisticMap["70-79"]++
+		} else if grade >= 80 && grade <= 89 {
+			statisticMap["80-89"]++
+		} else if grade >= 90 && grade <= 100 {
+			statisticMap["90-100"]++
+		} else if grade >= 101 && grade <= 110 {
+			statisticMap["101-110"]++
+		} else if grade > 110 {
+			statisticMap["higher110"]++
+		}
+	}
+
+	for _, v := range pmWithout {
+		grade := v.TotalGrade
+		if grade < 60 {
+			statisticMap["lower60"]++
+		} else if grade >= 60 && grade <= 69 {
+			statisticMap["60-69"]++
+		} else if grade >= 70 && grade <= 79 {
+			statisticMap["70-79"]++
+		} else if grade >= 80 && grade <= 89 {
+			statisticMap["80-89"]++
+		} else if grade >= 90 && grade <= 100 {
+			statisticMap["90-100"]++
+		} else if grade >= 101 && grade <= 110 {
+			statisticMap["101-110"]++
+		} else if grade > 110 {
+			statisticMap["higher110"]++
+		}
+	}
+
+	for _, v := range testsGrade {
+		grade := v.TotalGrade
+		if grade < 60 {
+			statisticMap["lower60"]++
+		} else if grade >= 60 && grade <= 69 {
+			statisticMap["60-69"]++
+		} else if grade >= 70 && grade <= 79 {
+			statisticMap["70-79"]++
+		} else if grade >= 80 && grade <= 89 {
+			statisticMap["80-89"]++
+		} else if grade >= 90 && grade <= 100 {
+			statisticMap["90-100"]++
+		} else if grade >= 101 && grade <= 110 {
+			statisticMap["101-110"]++
+		} else if grade > 110 {
+			statisticMap["higher110"]++
+		}
+	}
+
+	// A2 小于60
+	f.SetCellValue("Sheet1", "A2", statisticMap["lower60"])
+
+	// B2 60-69
+	f.SetCellValue("Sheet1", "B2", statisticMap["60-69"])
+
+	// C2 70-79
+	f.SetCellValue("Sheet1", "C2", statisticMap["70-79"])
+
+	// D2 80-89
+	f.SetCellValue("Sheet1", "D2", statisticMap["80-89"])
+
+	// E2 90-100
+	f.SetCellValue("Sheet1", "E2", statisticMap["90-100"])
+
+	// F2 101-110
+	f.SetCellValue("Sheet1", "F2", statisticMap["101-110"])
+
+	// G2 大于110
+	f.SetCellValue("Sheet1", "G2", statisticMap["higher110"])
+
+
+	// 建立资料夹
+	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
+	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-kpi统计.xlsx", year, int(month), year, int(month))
+	// Check if the folder exists
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		// Create the folder if it does not exist
+		err := os.MkdirAll(folderPath, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("error creating folder: %v", err)
+		}
+		fmt.Println("Folder created successfully.")
+	} else {
+		fmt.Println("Folder already exists.")
+	}
+
+	// Save the modified file
+	if err = f.SaveAs(filePath); err != nil {
+		return fmt.Errorf("save as %v, err: %v", filePath, err)
+	}
+	return nil
 }

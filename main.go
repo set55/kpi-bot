@@ -66,6 +66,11 @@ func main() {
 		log.Fatalf("error ProduceTestKpi: %v", err)
 	}
 
+	err = robot.ProduceStatisticKpi("./excel/kpi统计.xlsx", "2024-07-01 00:00:00", "2024-07-31 23:59:59", rds, rdsWithoutTest, pms, pmsWithoutTest, tests)
+	if err != nil {
+		log.Fatalf("error ProduceStatisticKpi: %v", err)
+	}
+
 	// dbQuery.QueryRdBugCarryOver(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
 	// dbQuery.QueryRdBugCarryOverDetail(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
 	// dbQuery.QueryRdBugCarryOverWithoutTestReport(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
