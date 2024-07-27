@@ -3,6 +3,7 @@ package bot
 import (
 	"database/sql"
 	"fmt"
+	"kpi-bot/lib/deveops"
 	"kpi-bot/lib/excel"
 	"kpi-bot/lib/pm"
 	"kpi-bot/lib/rd"
@@ -110,6 +111,19 @@ func (l *Bot) ProduceStatisticKpi(tmplatePath, startTime, endTime string, rds, r
 	err := excel.MakeKpiStatisticsExcel(tmplatePath, startTime, rdKpiGrades, rdWithoutKpiGrades, pmKpiGrades, pmWithoutKpiGrades, testKpiGrades)
 	if err != nil {
 		return fmt.Errorf("make kpi statistics excel fail: %v", err)
+	}
+	return nil
+}
+
+func (l *Bot) ProduceDeveopsKpi(templatePath, startTime, endTime string, accounts []string) error {
+	kpiManager := deveops.NewDeveopsKpi(l.Db, accounts, startTime, endTime)
+	kpiGrades := kpiManager.GetDeveopsKpiGrade()
+
+	for _, kpiGrade := range kpiGrades {
+		err := excel.MakeDeveopsExcel(templatePath, kpiGrade)
+		if err != nil {
+			return fmt.Errorf("make rd without testreport excel fail: %v", err)
+		}
 	}
 	return nil
 }

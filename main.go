@@ -33,11 +33,13 @@ func main() {
 
 	
 	// all team members
-	rds := []string{"set.su", "paul.gao", "justin.lee", "samy.gou", "champion.fu", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
+	rds := []string{"set.su", "paul.gao", "samy.gou", "champion.fu", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
 	rdsWithoutTest := []string{"shiwen.tin", "xiechen", "zouyanling", "ruanbanyong", "zhouyao", "liuxiaoyan", "wangtuhe"}
 	tests := []string{"linyanhai", "wangshaoyu"}
-	pms := []string{"shawn.wang", "qixiaofeng"}
-	pmsWithoutTest := []string{"guoqiao.chen"}
+	pms := []string{"shawn.wang"}
+	pmsWithoutTest := []string{"guoqiao.chen", "qixiaofeng"}
+	deveops := []string{"justin.lee"}
+
 
 
 	robot := bot.NewBot(db)
@@ -69,6 +71,11 @@ func main() {
 	err = robot.ProduceStatisticKpi("./excel/kpi统计.xlsx", "2024-07-01 00:00:00", "2024-07-31 23:59:59", rds, rdsWithoutTest, pms, pmsWithoutTest, tests)
 	if err != nil {
 		log.Fatalf("error ProduceStatisticKpi: %v", err)
+	}
+
+	err = robot.ProduceDeveopsKpi("./excel/绩效考核模板-运维.xlsx", "2024-07-01 00:00:00", "2024-07-31 23:59:59", deveops)
+	if err != nil {
+		log.Fatalf("error ProduceDeveopsKpi: %v", err)
 	}
 
 	// dbQuery.QueryRdBugCarryOver(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")

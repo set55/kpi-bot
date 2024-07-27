@@ -3,6 +3,7 @@ package excel
 import (
 	"fmt"
 	"kpi-bot/common"
+	"kpi-bot/lib/deveops"
 	"kpi-bot/lib/pm"
 	"kpi-bot/lib/rd"
 	"kpi-bot/lib/test"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 )
+
 // 绩效考核-研发
 func MakeRdExcel(path string, data rd.RdKpiGrade) error {
 	f, err := excelize.OpenFile(path)
@@ -699,6 +701,100 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
 	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-kpi统计.xlsx", year, int(month), year, int(month))
+	// Check if the folder exists
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		// Create the folder if it does not exist
+		err := os.MkdirAll(folderPath, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("error creating folder: %v", err)
+		}
+		fmt.Println("Folder created successfully.")
+	} else {
+		fmt.Println("Folder already exists.")
+	}
+
+	// Save the modified file
+	if err = f.SaveAs(filePath); err != nil {
+		return fmt.Errorf("save as %v, err: %v", filePath, err)
+	}
+	return nil
+}
+
+
+// 绩效考核-运维
+func MakeDeveopsExcel(path string, data deveops.DeveopsKpiGrade) error {
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		return fmt.Errorf("open file fail: %v", err)
+	}
+	defer f.Close()
+
+	// Parse the date string into a time.Time object
+	layout := "2006-01-02 15:04:05"
+	t, err := time.Parse(layout, data.StartTime)
+	if err != nil {
+		return fmt.Errorf("parse time err: %v", err)
+	}
+
+	// Extract the year and month
+	year := t.Year()
+	month := t.Month()
+
+	// A1. 标题
+	f.SetCellValue("Sheet1", "A1", fmt.Sprintf("软件服务中心 运维工程师岗%v年%v月绩效考核表", year, int(month)))
+
+	// A2. 被考评人员部门：XXXX
+	f.SetCellValue("Sheet1", "A2", "被考评人员部门：软件服务中心")
+
+	// E2. 被考评人员：XXXX
+	f.SetCellValue("Sheet1", "E2", fmt.Sprintf("被考评人员：%v", common.AccountToName(data.Account)))
+
+	// F2. 考评人：xxxx
+	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
+
+	// G4. 项目进度达成率 完成情况
+	projectDetail := fmt.Sprintf("平均项目延时率：%v\n\n", data.AvgDiffRate)
+	projectDetail += "项目id/项目名称/计划开始时间/计划结束时间/实际结束时间\n\n"
+
+	for _, v := range data.ProjectProgressList {
+		projectDetail += fmt.Sprintf("%v/%v/%v/%v/%v\n\n", v.ProjectId, v.ProjectName, v.Begin, v.End, v.RealEnd)
+	}
+	f.SetCellValue("Sheet1", "G4", projectDetail)
+
+	// H4. 项目进度达成率 最终得分
+	f.SetCellValue("Sheet1", "H4", data.AvgProgressStandardGrade)
+
+	// G5. 需求达成率 完成情况
+	storyDetail := "需求id/需求标题/预估工时/需求分数\n\n"
+	for _, v := range data.StoryList {
+		storyDetail += fmt.Sprintf("%v/%v/%v/%v\n\n", v.Id, v.Title, v.Estimate, v.Score)
+	}
+	f.SetCellValue("Sheet1", "G5", storyDetail)
+
+	// H5. 需求达成率 最终得分
+	f.SetCellValue("Sheet1", "H5", data.TotalStoryScore)
+
+	// G7. 工时预估达成比 完成情况
+	f.SetCellValue("Sheet1", "G7", fmt.Sprintf("工时预估达成比：%v", data.TimeEstimateRate))
+
+	// H7. 工时预估达成比 最终得分
+	f.SetCellValue("Sheet1", "H7", data.TimeEstimateStandardGrade)
+
+	// H10. 总分数
+	f.SetCellValue("Sheet1", "H10", data.TotalGrade)
+
+	// G12. 绩效基数
+	f.SetCellValue("Sheet1", "G12", data.TotalGradeStandard)
+
+	// G13. 最终得分系数
+	f.SetCellValue("Sheet1", "G13", data.TotalGradeStandard)
+
+	// G16. 当月绩效奖金
+	f.SetCellValue("Sheet1", "G16", data.TotalGradeStandard*common.GetRewardByAccount(data.Account))
+
+	// 建立资料夹
+	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
+	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-绩效考核模板-运维-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist

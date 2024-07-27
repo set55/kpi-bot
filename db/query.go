@@ -829,7 +829,7 @@ func QueryTestValidBugRate(db *sql.DB, accounts []string, startTime, endTime str
 		where a.account in (%s) and b.assignedTo not in ("huangweiqi")
 		) tmp 
 		group by tmp.account,tmp.project,tmp.title
-		) tmp2
+		) tmp2 group by tmp2.account
 	`, startTime, endTime, common.AccountArrayToString(accounts))
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
@@ -916,7 +916,7 @@ func QueryTestBugCaseRate(db *sql.DB, accounts []string, startTime, endTime stri
 			where a.account in (%s)  and b.assignedTo not in ("huangweiqi")
 			) tmp 
 			group by tmp.account,tmp.project
-		) tmp2
+		) tmp2 group by tmp2.account
 	`, startTime, endTime, common.AccountArrayToString(accounts))
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
