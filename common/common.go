@@ -80,48 +80,48 @@ func ProjectTypeTransform(projectType string) string {
 
 func GetRewardByAccount(account string) float64 {
 	switch account {
-	// case "set.su":
-	// 	return 0
-	// case "paul.gao":
-	// 	return 0
-	// case "justin.lee":
-	// 	return 0
-	// case "shawn.wang":
-	// 	return 2000
-	// case "samy.gou":
-	// 	return 0
-	// case "champion.fu":
-	// 	return 2000
-	// case "alan.tin":
-	// 	return 1000
-	// case "shiwen.tin":
-	// 	return 2000
-	// case "guoqiao.chen":
-	// 	return 3000
-	// case "xiechen":
-	// 	return 1000
-	// case "zouyanling":
-	// 	return 0
-	// case "ruanbanyong":
-	// 	return 1000
-	// case "zhouyao":
-	// 	return 1000
-	// case "liuxiaoyan":
-	// 	return 2500
-	// case "linyanhai":
-	// 	return 0
-	// case "jihuaqing":
-	// 	return 2000
-	// case "liuhongtao":
-	// 	return 1000
-	// case "wangtuhe":
-	// 	return 2000
-	// case "deakin.han":
-	// 	return 0
-	// case "qixiaofeng":
-	// 	return 0
-	// case "wangshaoyu":
-	// 	return 0
+	case "set.su":
+		return 0
+	case "paul.gao":
+		return 0
+	case "justin.lee":
+		return 0
+	case "shawn.wang":
+		return 2000
+	case "samy.gou":
+		return 0
+	case "champion.fu":
+		return 2000
+	case "alan.tin":
+		return 1000
+	case "shiwen.tin":
+		return 2000
+	case "guoqiao.chen":
+		return 3000
+	case "xiechen":
+		return 1000
+	case "zouyanling":
+		return 0
+	case "ruanbanyong":
+		return 1000
+	case "zhouyao":
+		return 1000
+	case "liuxiaoyan":
+		return 2500
+	case "linyanhai":
+		return 0
+	case "jihuaqing":
+		return 2000
+	case "liuhongtao":
+		return 1000
+	case "wangtuhe":
+		return 2000
+	case "deakin.han":
+		return 0
+	case "qixiaofeng":
+		return 0
+	case "wangshaoyu":
+		return 0
 	default:
 		return 0
 	}

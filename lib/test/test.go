@@ -175,10 +175,9 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 			tmp.BugToStoryNum = result.ToStory
 			tmp.BugToStoryGrade = float64(result.ToStory) * BUG_ONE_GRADE
 			if tmp.BugToStoryGrade > BUG_TO_STORY_NUM_STANDARD {
-				tmp.TotalGrade += BUG_TO_STORY_NUM_STANDARD
-			} else {
-				tmp.TotalGrade += tmp.BugToStoryGrade
+				tmp.BugToStoryGrade = BUG_TO_STORY_NUM_STANDARD
 			}
+			tmp.TotalGrade += tmp.BugToStoryGrade
 			kpiGrades[account] = tmp
 		}
 	}

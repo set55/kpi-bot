@@ -180,7 +180,7 @@ func (l *DeveopsKpi) GetDeveopsKpiGrade() map[string]DeveopsKpiGrade {
 	for account, result := range storyScoreResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
-			if result.Score > STORY_STANDARD {
+			if result.Score >= STORY_STANDARD {
 				tmp.TotalStoryScore = STORY_STANDARD
 			} else {
 				tmp.TotalStoryScore = result.Score

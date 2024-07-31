@@ -585,15 +585,15 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 		grade := v.TotalGrade
 		if grade < 60 {
 			statisticMap["lower60"]++
-		} else if grade >= 60 && grade <= 69 {
+		} else if grade >= 60 && grade < 70 {
 			statisticMap["60-69"]++
-		} else if grade >= 70 && grade <= 79 {
+		} else if grade >= 70 && grade < 80 {
 			statisticMap["70-79"]++
-		} else if grade >= 80 && grade <= 89 {
+		} else if grade >= 80 && grade < 90 {
 			statisticMap["80-89"]++
 		} else if grade >= 90 && grade <= 100 {
 			statisticMap["90-100"]++
-		} else if grade >= 101 && grade <= 110 {
+		} else if grade > 100 && grade <= 110 {
 			statisticMap["101-110"]++
 		} else if grade > 110 {
 			statisticMap["higher110"]++
@@ -604,15 +604,15 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 		grade := v.TotalGrade
 		if grade < 60 {
 			statisticMap["lower60"]++
-		} else if grade >= 60 && grade <= 69 {
+		} else if grade >= 60 && grade < 70 {
 			statisticMap["60-69"]++
-		} else if grade >= 70 && grade <= 79 {
+		} else if grade >= 70 && grade < 80 {
 			statisticMap["70-79"]++
-		} else if grade >= 80 && grade <= 89 {
+		} else if grade >= 80 && grade < 90 {
 			statisticMap["80-89"]++
 		} else if grade >= 90 && grade <= 100 {
 			statisticMap["90-100"]++
-		} else if grade >= 101 && grade <= 110 {
+		} else if grade > 100 && grade <= 110 {
 			statisticMap["101-110"]++
 		} else if grade > 110 {
 			statisticMap["higher110"]++
@@ -623,15 +623,15 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 		grade := v.TotalGrade
 		if grade < 60 {
 			statisticMap["lower60"]++
-		} else if grade >= 60 && grade <= 69 {
+		} else if grade >= 60 && grade < 70 {
 			statisticMap["60-69"]++
-		} else if grade >= 70 && grade <= 79 {
+		} else if grade >= 70 && grade < 80 {
 			statisticMap["70-79"]++
-		} else if grade >= 80 && grade <= 89 {
+		} else if grade >= 80 && grade < 90 {
 			statisticMap["80-89"]++
 		} else if grade >= 90 && grade <= 100 {
 			statisticMap["90-100"]++
-		} else if grade >= 101 && grade <= 110 {
+		} else if grade > 100 && grade <= 110 {
 			statisticMap["101-110"]++
 		} else if grade > 110 {
 			statisticMap["higher110"]++
@@ -642,15 +642,15 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 		grade := v.TotalGrade
 		if grade < 60 {
 			statisticMap["lower60"]++
-		} else if grade >= 60 && grade <= 69 {
+		} else if grade >= 60 && grade < 70 {
 			statisticMap["60-69"]++
-		} else if grade >= 70 && grade <= 79 {
+		} else if grade >= 70 && grade < 80 {
 			statisticMap["70-79"]++
-		} else if grade >= 80 && grade <= 89 {
+		} else if grade >= 80 && grade < 90 {
 			statisticMap["80-89"]++
-		} else if grade >= 90 && grade <= 100 {
+		} else if grade >= 90 && grade < 100 {
 			statisticMap["90-100"]++
-		} else if grade >= 101 && grade <= 110 {
+		} else if grade >= 100 && grade <= 110 {
 			statisticMap["101-110"]++
 		} else if grade > 110 {
 			statisticMap["higher110"]++
@@ -661,15 +661,15 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 		grade := v.TotalGrade
 		if grade < 60 {
 			statisticMap["lower60"]++
-		} else if grade >= 60 && grade <= 69 {
+		} else if grade >= 60 && grade < 70 {
 			statisticMap["60-69"]++
-		} else if grade >= 70 && grade <= 79 {
+		} else if grade >= 70 && grade < 80 {
 			statisticMap["70-79"]++
-		} else if grade >= 80 && grade <= 89 {
+		} else if grade >= 80 && grade < 90 {
 			statisticMap["80-89"]++
 		} else if grade >= 90 && grade <= 100 {
 			statisticMap["90-100"]++
-		} else if grade >= 101 && grade <= 110 {
+		} else if grade > 100 && grade <= 110 {
 			statisticMap["101-110"]++
 		} else if grade > 110 {
 			statisticMap["higher110"]++
@@ -781,16 +781,16 @@ func MakeDeveopsExcel(path string, data deveops.DeveopsKpiGrade) error {
 	f.SetCellValue("Sheet1", "H7", data.TimeEstimateStandardGrade)
 
 	// H10. 总分数
-	f.SetCellValue("Sheet1", "H10", data.TotalGrade)
+	f.SetCellValue("Sheet1", "H11", data.TotalGrade)
 
 	// G12. 绩效基数
-	f.SetCellValue("Sheet1", "G12", data.TotalGradeStandard)
-
-	// G13. 最终得分系数
 	f.SetCellValue("Sheet1", "G13", data.TotalGradeStandard)
 
+	// G13. 最终得分系数
+	f.SetCellValue("Sheet1", "G14", data.TotalGradeStandard)
+
 	// G16. 当月绩效奖金
-	f.SetCellValue("Sheet1", "G16", data.TotalGradeStandard*common.GetRewardByAccount(data.Account))
+	f.SetCellValue("Sheet1", "G17", data.TotalGradeStandard*common.GetRewardByAccount(data.Account))
 
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
