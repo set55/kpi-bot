@@ -117,11 +117,11 @@ func GetRewardByAccount(account string) float64 {
 	case "wangtuhe":
 		return 2000
 	case "deakin.han":
-		return 0
+		return 2000
 	case "qixiaofeng":
-		return 0
+		return 1000
 	case "wangshaoyu":
-		return 0
+		return 2000
 	default:
 		return 0
 	}
