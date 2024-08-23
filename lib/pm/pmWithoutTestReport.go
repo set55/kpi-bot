@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
-	"kpi-bot/lib/rd"
 )
 
 
@@ -171,7 +170,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 			tmp.SumProjectDiff = result.SumProjectDiff - tmp.ProjectTotalSaturdays - tmp.ProjectTotalSundays
 			tmp.SumRealProjectDiff = result.SumRealProjectDiff - tmp.RealTotalSaturdays - tmp.RealTotalSundays
 			tmp.DiffRate = common.GetProjectProgressExpectRate(tmp.SumProjectDiff, tmp.SumRealProjectDiff)
-			tmp.ProgressStandard = rd.GetRdProjectProgressStandard(tmp.DiffRate)
+			tmp.ProgressStandard = GetPmProjectProgressStandard(tmp.DiffRate)
 			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.ProgressStandardGrade
 			kpiGrades[account] = tmp

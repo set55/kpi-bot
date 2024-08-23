@@ -13,6 +13,10 @@ const (
 	// 需求完成率 分值
 	STORY_STANDARD = 40
 
+	// 需求基础 分值
+	STORY_BASE_TIME = 0.1 // 小时
+	STORY_BASE_SCORE = 0.020 // 分值
+
 	// bug遗留率 分值
 	BUG_CARRY_OVER_STANDARD = 20
 
@@ -198,34 +202,44 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 需求达成率
-	storyScoreResult := dbQuery.QueryRdStoryScore(l.Db, l.Accounts, l.StartTime, l.EndTime)
-	for account, result := range storyScoreResult {
-		if _, ok := kpiGrades[account]; ok {
-			tmp := kpiGrades[account]
-			if result.Score > STORY_STANDARD {
-				tmp.TotalStoryScore = STORY_STANDARD
-			} else {
-				tmp.TotalStoryScore = result.Score
-			}
-			tmp.TotalGrade += tmp.TotalStoryScore
-			kpiGrades[account] = tmp
-		}
-	}
+	// storyScoreResult := dbQuery.QueryRdStoryScore(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	// for account, result := range storyScoreResult {
+	// 	if _, ok := kpiGrades[account]; ok {
+	// 		tmp := kpiGrades[account]
+	// 		if result.Score > STORY_STANDARD {
+	// 			tmp.TotalStoryScore = STORY_STANDARD
+	// 		} else {
+	// 			tmp.TotalStoryScore = result.Score
+	// 		}
+	// 		tmp.TotalGrade += tmp.TotalStoryScore
+	// 		kpiGrades[account] = tmp
+	// 	}
+	// }
 
 	// 需求完成情况
 	storyDetailResult := dbQuery.QueryRdStoryDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
+			totalScore := float64(0)
 			for _, r := range result {
+				score := r.Estimate / STORY_BASE_TIME * STORY_BASE_SCORE
+				totalScore += score
 				tmp.StoryList = append(tmp.StoryList, StoryInfo{
 					Id:       r.StoryId,
 					Account:  r.Account,
 					Title:    r.Title,
 					Estimate: r.Estimate,
-					Score:    r.Score,
+					Score:    score,
 				})
 			}
+
+			if totalScore > STORY_STANDARD {
+				tmp.TotalStoryScore = STORY_STANDARD
+			} else {
+				tmp.TotalStoryScore = totalScore
+			}
+			tmp.TotalGrade += tmp.TotalStoryScore
 			kpiGrades[account] = tmp
 		}
 	}

@@ -265,7 +265,7 @@ func QueryRdProjectProgressDetail(db *sql.DB, accounts []string, startTime, endT
 		select a.account, c.id as project_id ,c.name as project_name, c.begin , c.end, c.realEnd, TIMESTAMPDIFF(DAY,c.begin,c.end) as plan_diff, TIMESTAMPDIFF(DAY,c.begin,c.realEnd) as real_diff
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
-		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private") and openedBy in ("shawn.wang", "qixiaofeng", "guoqiao.chen")
+		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.deleted="0" and c.acl in ("open", "private") and openedBy in ("shawn.wang", "qixiaofeng", "guoqiao.chen")
 		where a.account in (%s) and c.realEnd between "%s" and "%s"
 		order by a.account,c.realEnd desc
 	`, common.AccountArrayToString(accounts), startTime, endTime)

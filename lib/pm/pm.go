@@ -4,10 +4,17 @@ import (
 	"database/sql"
 	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
-	"kpi-bot/lib/rd"
 )
 
 const (
+
+	// 项目进度延时率基数
+	PM_PROJECT_PROGRESS_Level1 = 0.8
+	PM_PROJECT_PROGRESS_Level2 = 1
+	PM_PROJECT_PROGRESS_Level3 = 1.2
+	PM_PROJECT_PROGRESS_Level4 = 0.8
+	PM_PROJECT_PROGRESS_Level5 = 0.5
+
 	// 项目软件项目进度达成率 分值
 	PROJECT_PROGRESS_STANDARD = 40
 
@@ -193,7 +200,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 			tmp.SumRealTestDiff = result.SumRealTestDiff
 			tmp.SumTestDiff = result.SumTestDiff
 			tmp.DiffRate = common.GetProjectProgressExpectRate((tmp.SumProjectDiff + tmp.SumTestDiff - tmp.ProjectTotalSaturdays - tmp.ProjectTotalSundays), (tmp.SumRealProjectDiff + tmp.SumRealTestDiff - tmp.RealTotalSaturdays - tmp.RealTotalSundays))
-			tmp.ProgressStandard = rd.GetRdProjectProgressStandard(tmp.DiffRate)
+			tmp.ProgressStandard = GetPmProjectProgressStandard(tmp.DiffRate)
 			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.ProgressStandardGrade
 			kpiGrades[account] = tmp
@@ -320,4 +327,20 @@ func (l *PmKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
 		return THIRD_COEFFICIENT
 	}
 	return 0
+}
+
+func GetPmProjectProgressStandard(avgDiffRate float64) float64 {
+	if avgDiffRate <= -0.5 {
+		return PM_PROJECT_PROGRESS_Level1
+	} else if avgDiffRate > -0.5 && avgDiffRate <= -0.2 {
+		return PM_PROJECT_PROGRESS_Level2
+	}else if avgDiffRate > -0.2 && avgDiffRate <= 0 {
+		return PM_PROJECT_PROGRESS_Level3
+	} else if avgDiffRate > 0 && avgDiffRate <= 0.2 {
+		return PM_PROJECT_PROGRESS_Level4
+	} else if avgDiffRate > 0.2 && avgDiffRate <= 0.5 {
+		return PM_PROJECT_PROGRESS_Level5
+	} else {
+		return 0
+	}
 }

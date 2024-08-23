@@ -148,34 +148,43 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 需求达成率
-	storyScoreResult := dbQuery.QueryRdStoryScore(l.Db, l.Accounts, l.StartTime, l.EndTime)
-	for account, result := range storyScoreResult {
-		if _, ok := kpiGrades[account]; ok {
-			tmp := kpiGrades[account]
-			if result.Score > STORY_STANDARD_WITHOUT_TESTREPORT {
-				tmp.TotalStoryScore = STORY_STANDARD_WITHOUT_TESTREPORT
-			} else {
-				tmp.TotalStoryScore = result.Score
-			}
-			tmp.TotalGrade += tmp.TotalStoryScore
-			kpiGrades[account] = tmp
-		}
-	}
+	// storyScoreResult := dbQuery.QueryRdStoryScore(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	// for account, result := range storyScoreResult {
+	// 	if _, ok := kpiGrades[account]; ok {
+	// 		tmp := kpiGrades[account]
+	// 		if result.Score > STORY_STANDARD_WITHOUT_TESTREPORT {
+	// 			tmp.TotalStoryScore = STORY_STANDARD_WITHOUT_TESTREPORT
+	// 		} else {
+	// 			tmp.TotalStoryScore = result.Score
+	// 		}
+	// 		tmp.TotalGrade += tmp.TotalStoryScore
+	// 		kpiGrades[account] = tmp
+	// 	}
+	// }
 
 	// 需求完成情况
 	storyDetailResult := dbQuery.QueryRdStoryDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
+			totalScore := float64(0)
 			for _, r := range result {
+				score := r.Estimate / STORY_BASE_TIME * STORY_BASE_SCORE
+				totalScore += score
 				tmp.StoryList = append(tmp.StoryList, StoryInfo{
 					Id: r.StoryId,
 					Account: r.Account,
 					Title: r.Title,
 					Estimate: r.Estimate,
-					Score: r.Score,
+					Score: score,
 				})
 			}
+			if totalScore > STORY_STANDARD_WITHOUT_TESTREPORT {
+				tmp.TotalStoryScore = STORY_STANDARD_WITHOUT_TESTREPORT
+			} else {
+				tmp.TotalStoryScore = totalScore
+			}
+			tmp.TotalGrade += tmp.TotalStoryScore
 			kpiGrades[account] = tmp
 		}
 	}
