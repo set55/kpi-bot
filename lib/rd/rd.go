@@ -15,7 +15,7 @@ const (
 
 	// 需求基础 分值
 	STORY_BASE_TIME = 0.1 // 小时
-	STORY_BASE_SCORE = 0.020 // 分值
+	STORY_BASE_SCORE = 0.021 // 分值
 
 	// bug遗留率 分值
 	BUG_CARRY_OVER_STANDARD = 20
@@ -276,9 +276,15 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			for _, r := range result {
+				projectName := ""
+				if r.ProjectName == nil {
+					projectName = ""
+				} else {
+					projectName = *r.ProjectName
+				}
 				tmp.BugInfoList = append(tmp.BugInfoList, BugCarryInfo{
 					Account:       r.Account,
-					ProjectName:   r.ProjectName,
+					ProjectName:   projectName,
 					BugId:         r.BugId,
 					BugTitle:      r.BugTitle,
 					BugResolution: r.BugResolution,

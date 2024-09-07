@@ -64,7 +64,7 @@ type (
 	// 項目版本bug遗留實際情況 有测试报告
 	QueryRdBugCarryOverDetailResultWithoutTestReport struct {
 		Account       string // 禅道账号
-		ProjectName   string // 项目名称
+		ProjectName   *string // 项目名称
 		BugId         int64  // bug id
 		BugTitle      string // bug 标题
 		BugResolution string // bug 解决方案
@@ -562,8 +562,8 @@ func QueryRdBugCarryOverDetailWithoutTestReport(db *sql.DB, accounts []string, s
 	sqlCmd := fmt.Sprintf(`
 		select a.account as account, c.name as project_name, b.id as bug_id, b.title as bug_title, b.resolution as bug_resolution, b.status as bug_status
 		from zt_bug b
-		inner join zt_project c on c.id = b.project
-		inner join zt_user a on a.account = b.resolvedBy or (a.account = b.assignedTo and b.status="active")
+		left join zt_project c on c.id = b.project
+		left join zt_user a on a.account = b.resolvedBy or (a.account = b.assignedTo and b.status="active")
 		where a.account in (%s) and b.assignedDate between "%s" and "%s" and b.deleted ="0"
 		`, common.AccountArrayToString(accounts), startTime, endTime)
 	fmt.Println(sqlCmd)

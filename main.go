@@ -36,8 +36,8 @@ func main() {
 	rds := []string{"set.su", "paul.gao", "samy.gou", "champion.fu", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
 	rdsWithoutTest := []string{"shiwen.tin", "xiechen", "zouyanling", "ruanbanyong", "zhouyao", "liuxiaoyan", "wangtuhe"}
 	tests := []string{"linyanhai", "wangshaoyu"}
-	pms := []string{"shawn.wang"}
-	pmsWithoutTest := []string{"guoqiao.chen", "qixiaofeng"}
+	pms := []string{"qixiaofeng"}
+	pmsWithoutTest := []string{"guoqiao.chen", "shawn.wang"}
 	deveops := []string{"justin.lee"}
 
 	beginDatetime := "2024-08-01 00:00:00"

@@ -11,6 +11,8 @@ const (
 	// 项目进度延时率 分值
 	PROJECT_PROGRESS_STANDARD_WITHOUT_TESTREPORT = 30
 
+	STORY_BASE_SCORE_WITHOUT_TESTREPORT = 0.021 // 分值
+
 	// 需求完成率 分值
 	STORY_STANDARD_WITHOUT_TESTREPORT = 45
 
@@ -169,7 +171,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 			tmp := kpiGrades[account]
 			totalScore := float64(0)
 			for _, r := range result {
-				score := r.Estimate / STORY_BASE_TIME * STORY_BASE_SCORE
+				score := r.Estimate / STORY_BASE_TIME * STORY_BASE_SCORE_WITHOUT_TESTREPORT
 				totalScore += score
 				tmp.StoryList = append(tmp.StoryList, StoryInfo{
 					Id: r.StoryId,
@@ -208,9 +210,15 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			for _, r := range result {
+				projectName := ""
+				if r.ProjectName == nil {
+					projectName = ""
+				} else {
+					projectName = *r.ProjectName
+				}
 				tmp.BugInfoList = append(tmp.BugInfoList, BugCarryInfoWithoutTestReport{
 					Account: r.Account,
-					ProjectName: r.ProjectName,
+					ProjectName: projectName,
 					BugId: r.BugId,
 					BugTitle: r.BugTitle,
 					BugResolution: r.BugResolution,
