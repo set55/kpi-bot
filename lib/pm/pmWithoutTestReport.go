@@ -9,7 +9,7 @@ import (
 
 const (
 	// 项目软件项目进度达成率 分值
-	PROJECT_PROGRESS_STANDARD_WITHOUT_TESTREPORT = 40
+	PROJECT_PROGRESS_STANDARD_WITHOUT_TESTREPORT = 30
 
 	// 项目成果完成率 分值
 	PROJECT_COMPLETEMENT_STANDARD_WITHOUT_TESTREPORT = 20
@@ -265,13 +265,17 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			for _, r := range result {
+				tmpEstimateRate := float64(0)
+				if r.EstimateRate != nil {
+					tmpEstimateRate = *r.EstimateRate
+				}
 				tmp.TimeEstimateList = append(tmp.TimeEstimateList, TimeEstimateInfo{
 					Account:       r.Account,
 					StoryId:       r.StoryId,
 					Title:         r.Title,
 					Estimate:      r.Estimate,
 					StoryConsumed: r.StoryConsumed,
-					EstimateRate:  r.EstimateRate,
+					EstimateRate:  tmpEstimateRate,
 				})
 			}
 			kpiGrades[account] = tmp

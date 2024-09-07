@@ -40,8 +40,8 @@ func main() {
 	pmsWithoutTest := []string{"guoqiao.chen", "shawn.wang"}
 	deveops := []string{"justin.lee"}
 
-	beginDatetime := "2024-08-01 00:00:00"
-	endDatetime := "2024-08-31 23:59:59"
+	beginDatetime := "2024-09-01 00:00:00"
+	endDatetime := "2024-09-30 23:59:59"
 
 
 

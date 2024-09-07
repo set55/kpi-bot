@@ -213,7 +213,7 @@ type (
 		Title         string  // 需求标题
 		Estimate      float64 // 预估工时
 		StoryConsumed float64 // 需求消耗工时
-		EstimateRate  float64 // 预估工时准确率
+		EstimateRate  *float64 // 预估工时准确率
 	}
 )
 
