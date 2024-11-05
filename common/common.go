@@ -62,6 +62,8 @@ func AccountToName(account string) string {
 		return "祁晓锋"
 	case "wangshaoyu":
 		return "王少宇"
+	case "simon.chen":
+		return "陈熙存"
 	default:
 		return account
 	}
@@ -113,14 +115,16 @@ func GetRewardByAccount(account string) float64 {
 	case "jihuaqing":
 		return 2000
 	case "liuhongtao":
-		return 1000
+		return 2000
 	case "wangtuhe":
 		return 2000
 	case "deakin.han":
-		return 2000
+		return 3500
 	case "qixiaofeng":
-		return 1000
+		return 3500
 	case "wangshaoyu":
+		return 3000
+	case "simon.chen":
 		return 2000
 	default:
 		return 0
@@ -128,6 +132,7 @@ func GetRewardByAccount(account string) float64 {
 }
 
 func GetProjectProgressExpectRate(planDiff, realDiff float64) (float64) {
+	fmt.Printf("planDiff: %v, realDiff: %v\n", planDiff, realDiff)
 	if planDiff == 0 {
 		return 2 // 若计划天数为0, rate视为大于1.2 给最低0分
 	}
@@ -137,6 +142,7 @@ func GetProjectProgressExpectRate(planDiff, realDiff float64) (float64) {
 
 	finalPlanDiff := planDiff - float64(planSubstractDays)
 	finalRealDiff := realDiff - float64(realSubstractDays)
+	fmt.Printf("finalPlanDiff: %v, finalRealDiff: %v\n", finalPlanDiff, finalRealDiff)
 
 	return (finalRealDiff / finalPlanDiff) - 1
 }
@@ -163,4 +169,22 @@ func CountWeekends(start, end string) (int, int) {
         }
     }
     return saturdays, sundays
+}
+
+func GetBugStandard(bugRate float64) float64 {
+	if bugRate == 0 {
+		return 1
+	} else if bugRate <= 0.1 {
+		return 0.9
+	} else if bugRate <= 0.2 {
+		return 0.8
+	} else if bugRate <= 0.3 {
+		return 0.7
+	} else if bugRate <= 0.4 {
+		return 0.6
+	} else if bugRate <= 0.5 {
+		return 0.5
+	} else {
+		return 0
+	}
 }

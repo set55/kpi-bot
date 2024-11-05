@@ -2,6 +2,7 @@ package pm
 
 import (
 	"database/sql"
+	"fmt"
 	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
 )
@@ -156,6 +157,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目软件项目进度达成率 完成情况
+	fmt.Print("项目软件项目进度达成率 完成情况\n")
 	progressDetailResult := dbQuery.QueryProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range progressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -163,6 +165,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 			for _, r := range result {
 				planSaturdays, planSundays := common.CountWeekends(r.ProjectBegin, r.ProjectEnd)
 				realSaturdays, realSundays := common.CountWeekends(r.ProjectBegin, r.ProjectRealEnd)
+				fmt.Printf("projectBegin: %v, ProjectEnd: %v, ProjectRealEnd: %v, planSaturdays: %v, planSundays: %v, realSaturdays: %v, realSundays: %v\n", r.ProjectBegin, r.ProjectEnd, r.ProjectRealEnd, planSaturdays, planSundays, realSaturdays, realSundays)
 
 				testPlanSaturdays, testPlanSundays := common.CountWeekends(r.TestStart, r.TestEnd)
 				testRealSaturdays, testRealSundays := common.CountWeekends(r.TestStart, r.TestRealEnd)
@@ -185,12 +188,19 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 
 				tmp.RealTotalSaturdays += float64(realSaturdays + testRealSaturdays) / 2
 				tmp.RealTotalSundays += float64(realSundays + testRealSundays)
+
+				tmp.ProjectTotalSaturdays = 0
+				tmp.ProjectTotalSundays = 0
+				tmp.RealTotalSaturdays = 0
+				tmp.RealTotalSundays = 0
 			}
 			kpiGrades[account] = tmp
 		}
 	}
 
+
 	// 项目软件项目进度达成率
+	fmt.Print("项目软件项目进度达成率\n")
 	progressResult := dbQuery.QueryProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range progressResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -199,7 +209,10 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 			tmp.SumProjectDiff = result.SumProjectDiff
 			tmp.SumRealTestDiff = result.SumRealTestDiff
 			tmp.SumTestDiff = result.SumTestDiff
+			fmt.Printf("QueryProjectProgress,account: %v, SumRealProjectDiff: %v, SumProjectDiff: %v, SumRealTestDiff: %v, SumTestDiff: %v, ProjectTotalSaturdays: %v, ProjectTotalSundays: %v, RealTotalSaturdays: %v, RealTotalSundays: %v\n",
+			account, tmp.SumRealProjectDiff, tmp.SumProjectDiff, tmp.SumRealTestDiff, tmp.SumTestDiff, tmp.ProjectTotalSaturdays, tmp.ProjectTotalSundays, tmp.RealTotalSaturdays, tmp.RealTotalSundays)
 			tmp.DiffRate = common.GetProjectProgressExpectRate((tmp.SumProjectDiff + tmp.SumTestDiff - tmp.ProjectTotalSaturdays - tmp.ProjectTotalSundays), (tmp.SumRealProjectDiff + tmp.SumRealTestDiff - tmp.RealTotalSaturdays - tmp.RealTotalSundays))
+			fmt.Printf("QueryProjectProgress,account: %v, DiffRate: %v\n", account, tmp.DiffRate)
 			tmp.ProgressStandard = GetPmProjectProgressStandard(tmp.DiffRate)
 			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.ProgressStandardGrade
@@ -208,6 +221,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目成果完成率
+	fmt.Print("项目成果完成率\n")
 	completeRateResult := dbQuery.QueryProjectCompleteRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range completeRateResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -221,6 +235,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目成果完成率,完成情况
+	fmt.Print("项目成果完成率,完成情况\n")
 	completeRateDetailResult := dbQuery.QueryProjectCompleteRateDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range completeRateDetailResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -236,6 +251,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目规划需求数
+	fmt.Print("项目规划需求数\n")
 	storyNumResult := dbQuery.QueryProjectStoryNum(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyNumResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -264,6 +280,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 预估承诺完成率
+	fmt.Print("预估承诺完成率\n")
 	projectPromiseResult := dbQuery.QueryProjectEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectPromiseResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -277,6 +294,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目预估工时准确率
+	fmt.Print("项目预估工时准确率\n")
 	timeEstimateResult := dbQuery.QueryProjectTimeEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range timeEstimateResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -290,6 +308,7 @@ func (l *PmKpi) GetPmKpiGrade() map[string]PmKpiGrade {
 	}
 
 	// 项目预估工时准确率 完成情况
+	fmt.Print("项目预估工时准确率 完成情况\n")
 	timeEstimateDetailResult := dbQuery.QueryProjectTimeEstimateRateDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range timeEstimateDetailResult {
 		if _, ok := kpiGrades[account]; ok {

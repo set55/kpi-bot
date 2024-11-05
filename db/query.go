@@ -507,6 +507,19 @@ func QueryCountTestTask(db *sql.DB, accounts []string, startTime, endTime string
 
 }
 
+// select a.account,b.project,c.name,count(1) as build_fix_bug
+// from zt_user a
+// left join zt_bug b on b.deleted="0" and b.resolvedBy = a.account and b.resolution in ( "fixed") and assignedDate between "2024-10-01 00:00:00" and "2024-10-31 23:59:59"
+// left join zt_project c on c.id = b.project
+// where a.account in ("liuxiaoyan") and c.name is not null
+// group by a.account ,b.project,c.name
+
+// select a.account as account, c.name as project_name, b.id as bug_id, b.title as bug_title, b.resolution as bug_resolution, b.status as bug_status
+// from zt_bug b
+// left join zt_project c on c.id = b.project
+// left join zt_user a on a.account = b.resolvedBy or (a.account = b.assignedTo and b.status="active")
+// where a.account in ("liuxiaoyan") and b.assignedDate between "2024-10-01 00:00:00" and "2024-10-31 23:59:59" and b.deleted ="0"
+
 // 軟件项目版本bug遗留率情况 无测试报告
 func QueryRdBugCarryOverWithoutTestReport(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryRdBugCarryOverResult {
 	results := map[string]QueryRdBugCarryOverResult{}
@@ -525,7 +538,7 @@ func QueryRdBugCarryOverWithoutTestReport(db *sql.DB, accounts []string, startTi
 			from zt_user a 
 			left join zt_bug b on b.deleted="0" and b.resolvedBy = a.account and b.resolution in ( "fixed") and assignedDate between "%s" and "%s"
 			left join zt_project c on c.id = b.project
-			where a.account in (%s)
+			where a.account in (%s) and c.name is not null
 			group by a.account ,b.project,c.name
 		) tmp 
 		GROUP BY account
@@ -555,6 +568,25 @@ func QueryRdBugCarryOverWithoutTestReport(db *sql.DB, accounts []string, startTi
 	}
 	return results
 }
+
+// select account ,AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) as bug_carry_over_rate,
+// 		case when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) = 0 then "1.0"
+// 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.1 then "0.9"
+// 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.2 then "0.8"
+// 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.3 then "0.7"
+// 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.4 then "0.6"
+// 			when AVG(build_postponed_bugs/(build_postponed_bugs+build_fix_bug)) <= 0.5 then "0.5"
+// 			else "0" end as bug_carry_over_rate_standard
+// 		from ( 
+// 			select a.account,b.project,c.name,count(1) as build_fix_bug,
+// 			(select count(1) from zt_bug where project = b.project and deleted = "0" and status = "active" and assignedTo = a.account and assignedDate between "%s" and "%s") as build_postponed_bugs 
+// 			from zt_user a 
+// 			left join zt_bug b on b.deleted="0" and b.resolvedBy = a.account and b.resolution in ( "fixed") and assignedDate between "%s" and "%s"
+// 			left join zt_project c on c.id = b.project
+// 			where a.account in ("samy.gou","deakin.han")
+// 			group by a.account ,b.project,c.name
+// 		) tmp 
+// 		GROUP BY account
 
 // 項目版本bug遗留實際情況 无测试报告
 func QueryRdBugCarryOverDetailWithoutTestReport(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryRdBugCarryOverDetailResultWithoutTestReport {
@@ -857,7 +889,7 @@ func QueryTestValidBugRate(db *sql.DB, accounts []string, startTime, endTime str
 }
 
 // bug转需求数
-func QueryTestBugToStory(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryTestBugToStoryResult {
+func QueryTestBugToStory(db *sql.DB, accounts, storyPms []string, startTime, endTime string) map[string]QueryTestBugToStoryResult {
 	results := map[string]QueryTestBugToStoryResult{}
 	sqlCmd := fmt.Sprintf(`
 		select tmp.account, count(1) as tostory_num
@@ -865,10 +897,10 @@ func QueryTestBugToStory(db *sql.DB, accounts []string, startTime, endTime strin
 		select a.account,b.id,b.title
 		from zt_user a 
 		inner join zt_testreport c on c.end between "%s" and "%s" and c.deleted ="0" 
-		inner join zt_bug b on b.deleted="0" and b.project = c.project and b.openedBuild = c.builds and b.openedBy = a.account and ( b.resolution in ("tostory")  or b.assignedTo in ("shawn.wang" , "huangweiqi"))
+		inner join zt_bug b on b.deleted="0" and b.project = c.project and b.openedBuild = c.builds and b.openedBy = a.account and ( b.resolution in ("tostory")  or b.assignedTo in (%s))
 		where a.account in (%s)
 		) tmp group by tmp.account
-	`, startTime, endTime, common.AccountArrayToString(accounts))
+	`, startTime, endTime, common.AccountArrayToString(storyPms), common.AccountArrayToString(accounts))
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
 	if err != nil {
@@ -1023,7 +1055,8 @@ func QueryProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTim
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, ProjectId: %d, ProjectName: %s, ProjectType: %s, ProjectEnd: %s, ProjectRealEnd: %s, ProjectDiff: %d, TestStart: %s, TestEnd: %s\n", result.Account, result.ProjectId, result.ProjectName, result.ProjectType, result.ProjectEnd, result.ProjectRealEnd, result.ProjectDiff, result.TestStart, result.TestEnd)
+		fmt.Printf("Account: %s, ProjectId: %d, ProjectName: %s, ProjectType: %s, ProjectBegin: %s, ProjectEnd: %s, ProjectRealEnd: %s, ProjectDiff: %d, TestStart: %s, TestEnd: %s\n",
+		result.Account, result.ProjectId, result.ProjectName, result.ProjectType, result.ProjectBegin, result.ProjectEnd, result.ProjectRealEnd, result.ProjectDiff, result.TestStart, result.TestEnd)
 
 		results[result.Account] = append(results[result.Account], result)
 	}

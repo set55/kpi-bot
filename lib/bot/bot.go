@@ -78,8 +78,8 @@ func (l *Bot) ProducePmKpiWithoutTestReport(templatePath, startTime, endTime str
 	return nil
 }
 
-func (l *Bot) ProduceTestKpi(templatePath, startTime, endTime string, accounts []string) error {
-	kpiManager := test.NewTestKpi(l.Db, accounts, startTime, endTime)
+func (l *Bot) ProduceTestKpi(templatePath, startTime, endTime string, accounts, storyPms []string) error {
+	kpiManager := test.NewTestKpi(l.Db, accounts, storyPms, startTime, endTime)
 	kpiGrades := kpiManager.GetTestKpiGrade()
 
 	for _, kpiGrade := range kpiGrades {
@@ -93,12 +93,12 @@ func (l *Bot) ProduceTestKpi(templatePath, startTime, endTime string, accounts [
 
 
 
-func (l *Bot) ProduceStatisticKpi(tmplatePath, startTime, endTime string, rds, rdWithouts, pms, pmWithouts, tests []string) error {
+func (l *Bot) ProduceStatisticKpi(tmplatePath, startTime, endTime string, rds, rdWithouts, pms, pmWithouts, tests, storyPms []string) error {
 	rdkpiManager := rd.NewRdKpi(l.Db, rds, startTime, endTime)
 	rdWithoutKpiManager := rd.NewRdKpiWithoutTestReport(l.Db, rdWithouts, startTime, endTime)
 	pmKpiManager := pm.NewPmKpi(l.Db, pms, startTime, endTime)
 	pmWithoutKpiManager := pm.NewPmKpiWithoutTestReport(l.Db, pmWithouts, startTime, endTime)
-	testKpiManager := test.NewTestKpi(l.Db, tests, startTime, endTime)
+	testKpiManager := test.NewTestKpi(l.Db, tests, storyPms, startTime, endTime)
 
 
 	rdKpiGrades := rdkpiManager.GetRdKpiGrade()

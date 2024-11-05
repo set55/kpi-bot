@@ -2,6 +2,7 @@ package test
 
 import (
 	"database/sql"
+	"fmt"
 	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
 	"kpi-bot/lib/rd"
@@ -33,6 +34,7 @@ type (
 		Db        *sql.DB  // 数据库连接
 		StartTime string   // 开始时间
 		EndTime   string   // 结束时间
+		StoryPms  []string // 需求PM
 	}
 
 	TestKpiGrade struct {
@@ -89,12 +91,13 @@ type (
 )
 
 // NewTestKpi 创建一个测试KPI对象
-func NewTestKpi(db *sql.DB, accounts []string, startTime, endTime string) *TestKpi {
+func NewTestKpi(db *sql.DB, accounts, storyPms []string, startTime, endTime string) *TestKpi {
 	return &TestKpi{
 		Accounts:  accounts,
 		Db:        db,
 		StartTime: startTime,
 		EndTime:   endTime,
+		StoryPms:  storyPms,
 	}
 }
 
@@ -112,6 +115,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	}
 
 	// 测试软件项目进度 完成情况
+	fmt.Print("测试软件项目进度 完成情况\n")
 	testProgressInfos := dbQuery.QueryTestProjectProgressResultDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 
 	for account, result := range testProgressInfos {
@@ -133,6 +137,10 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 
 				tmp.RealTotalSaturdays += float64(realSaturdays) / 2
 				tmp.RealTotalSundays += float64(realSundays)
+				tmp.ProjectTotalSaturdays = 0
+				tmp.ProjectTotalSundays = 0
+				tmp.RealTotalSaturdays = 0
+				tmp.RealTotalSundays = 0
 			}
 			kpiGrades[account] = tmp
 		}
@@ -140,6 +148,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 
 
 	// 测试软件项目进度达成率
+	fmt.Print("测试软件项目进度达成率\n")
 	testProgressResult := dbQuery.QueryTestProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range testProgressResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -155,6 +164,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	}
 
 	// 测试软件项目有效bug率
+	fmt.Print("测试软件项目有效bug率\n")
 	validateBugRateResult := dbQuery.QueryTestValidBugRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range validateBugRateResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -168,7 +178,8 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	}
 
 	// bug转需求数
-	bugToStoryNumResult := dbQuery.QueryTestBugToStory(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	fmt.Print("bug转需求数\n")
+	bugToStoryNumResult := dbQuery.QueryTestBugToStory(l.Db, l.Accounts, l.StoryPms, l.StartTime, l.EndTime)
 	for account, result := range bugToStoryNumResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -183,6 +194,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	}
 
 	// 用例发现bug率
+	fmt.Print("用例发现bug率\n")
 	caseBugRateResult := dbQuery.QueryTestBugCaseRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range caseBugRateResult {
 		if _, ok := kpiGrades[account]; ok {

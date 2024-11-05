@@ -2,6 +2,7 @@ package pm
 
 import (
 	"database/sql"
+	"fmt"
 	"kpi-bot/common"
 	dbQuery "kpi-bot/db"
 )
@@ -134,6 +135,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	}
 
 	// 项目软件项目进度达成率 完成情况
+	fmt.Print("项目软件项目进度达成率 完成情况\n")
 	progressDetailResult := dbQuery.QueryProjectProgressDetailWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range progressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -156,6 +158,11 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 
 				tmp.RealTotalSaturdays += float64(realSaturdays) / 2
 				tmp.RealTotalSundays += float64(realSundays)
+
+				tmp.ProjectTotalSaturdays = 0
+				tmp.ProjectTotalSundays = 0
+				tmp.RealTotalSaturdays = 0
+				tmp.RealTotalSundays = 0
 				
 			}
 			kpiGrades[account] = tmp
@@ -163,6 +170,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	}
 
 	// 项目软件项目进度达成率
+	fmt.Print("项目软件项目进度达成率\n")
 	progressResult := dbQuery.QueryProjectProgressWithout(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range progressResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -178,6 +186,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	}
 
 	// 项目成果完成率
+	fmt.Print("项目成果完成率\n")
 	completeRateResult := dbQuery.QueryProjectCompleteRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range completeRateResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -191,6 +200,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	}
 
 	// 项目成果完成率,完成情况
+	fmt.Print("项目成果完成率,完成情况\n")
 	completeRateDetailResult := dbQuery.QueryProjectCompleteRateDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range completeRateDetailResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -206,6 +216,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	}
 
 	// 项目规划需求数
+	fmt.Print("项目规划需求数\n")
 	storyNumResult := dbQuery.QueryProjectStoryNum(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyNumResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -234,6 +245,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	}
 
 	// 预估承诺完成率
+	fmt.Print("预估承诺完成率\n")
 	projectPromiseResult := dbQuery.QueryProjectEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectPromiseResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -247,6 +259,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	}
 
 	// 项目预估工时准确率
+	fmt.Print("项目预估工时准确率\n")
 	timeEstimateResult := dbQuery.QueryProjectTimeEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range timeEstimateResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -260,6 +273,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 	}
 
 	// 项目预估工时准确率 完成情况
+	fmt.Print("项目预估工时准确率 完成情况\n")
 	timeEstimateDetailResult := dbQuery.QueryProjectTimeEstimateRateDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range timeEstimateDetailResult {
 		if _, ok := kpiGrades[account]; ok {

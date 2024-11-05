@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	// Define the data source name (DSN)
+	// Define the data source name (DSN) Mh-mJ?sp.G"43*_HrCXRP9+^QS%3Et2yZE
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", "developer", "Mh-mJ?sp.G\"43*_HrCXRP9+^QS%3Et2yZE", "192.168.2.8", "32606", "zentao")
 
 	// Open a connection to the database
@@ -34,14 +34,22 @@ func main() {
 	
 	// all team members
 	rds := []string{"set.su", "paul.gao", "samy.gou", "champion.fu", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
+	// rds := []string{"champion.fu"}
+	// 软件服务中心 研发
 	rdsWithoutTest := []string{"shiwen.tin", "xiechen", "zouyanling", "ruanbanyong", "zhouyao", "liuxiaoyan", "wangtuhe"}
+	// rdsWithoutTest := []string{"liuxiaoyan"}
+
+	// 阿崔部门 研发
+	// rdsWithoutTest := []string{"zengyi", "chenbo", "lixiaolong", "tangjilin", "jiaoxiangjie", "bieji", "suiguanyou", "lishuaipeng"}
 	tests := []string{"linyanhai", "wangshaoyu"}
+	// tests := []string{"wangshaoyu"}
 	pms := []string{"qixiaofeng"}
-	pmsWithoutTest := []string{"guoqiao.chen", "shawn.wang"}
+	pmsWithoutTest := []string{"guoqiao.chen", "shawn.wang","simon.chen"}
+	// pmsWithoutTest := []string{"guoqiao.chen"}
 	deveops := []string{"justin.lee"}
 
-	beginDatetime := "2024-09-01 00:00:00"
-	endDatetime := "2024-09-30 23:59:59"
+	beginDatetime := "2024-11-01 00:00:00"
+	endDatetime := "2024-11-31 23:59:59"
 
 
 
@@ -66,12 +74,13 @@ func main() {
 		log.Fatalf("error ProducePmKpiWithoutTestReport: %v", err)
 	}
 
-	err = robot.ProduceTestKpi("./excel/绩效考核模板-测试.xlsx", beginDatetime, endDatetime, tests)
+	storyPms := []string{"qixiaofeng", "guoqiao.chen", "shawn.wang", "simon.chen", "huangweiqi"}
+	err = robot.ProduceTestKpi("./excel/绩效考核模板-测试.xlsx", beginDatetime, endDatetime, tests, storyPms)
 	if err != nil {
 		log.Fatalf("error ProduceTestKpi: %v", err)
 	}
 
-	err = robot.ProduceStatisticKpi("./excel/kpi统计.xlsx", beginDatetime, endDatetime, rds, rdsWithoutTest, pms, pmsWithoutTest, tests)
+	err = robot.ProduceStatisticKpi("./excel/kpi统计.xlsx", beginDatetime, endDatetime, rds, rdsWithoutTest, pms, pmsWithoutTest, tests, storyPms)
 	if err != nil {
 		log.Fatalf("error ProduceStatisticKpi: %v", err)
 	}
@@ -80,16 +89,4 @@ func main() {
 	if err != nil {
 		log.Fatalf("error ProduceDeveopsKpi: %v", err)
 	}
-
-	// dbQuery.QueryRdBugCarryOver(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryRdBugCarryOverDetail(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryRdBugCarryOverWithoutTestReport(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryRdBugCarryOverDetailWithoutTestReport(db, rds, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryRdProjectProgress(db, []string{"zhouyao"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryRdProjectProgressDetail(db, []string{"zhouyao"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryProjectProgress(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryProjectProgressWithout(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryProjectCompleteRate(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-	// dbQuery.QueryProjectCompleteRateDetail(db, []string{"shawn.wang", "qixiaofeng", "guoqiao.chen"}, "2024-07-01 00:00:00", "2024-07-31 23:59:59")
-
 }

@@ -154,6 +154,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 			Account:   account,
 			StartTime: l.StartTime,
 			EndTime:   l.EndTime,
+			BugCarryStandardGrade: BUG_CARRY_OVER_STANDARD,
 		}
 	}
 
@@ -181,6 +182,11 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 
 				tmp.RealTotalSaturdays += float64(realSaturdays) / 2
 				tmp.RealTotalSundays += float64(realSundays)
+
+				tmp.ProjectTotalSaturdays = 0
+				tmp.ProjectTotalSundays = 0
+				tmp.RealTotalSaturdays = 0
+				tmp.RealTotalSundays = 0
 			}
 			kpiGrades[account] = tmp
 		}
@@ -255,32 +261,41 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 项目版本bug遗留率 無測試報告
-	bugCarryOverResult := dbQuery.QueryRdBugCarryOverWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
-	for account, result := range bugCarryOverResult {
-		if _, ok := kpiGrades[account]; ok {
-			tmp := kpiGrades[account]
-			if tmp.TestTaskCount > 0 {
-				tmp.BugCarryOverRate = result.BugCarryOverRate
-				tmp.BugCarryStandard = result.BugCarryOverRateStandard
-				tmp.BugCarryStandardGrade = result.BugCarryOverRateStandard * BUG_CARRY_OVER_STANDARD
-				tmp.TotalGrade += tmp.BugCarryStandardGrade
-				kpiGrades[account] = tmp
-			}
+	// bugCarryOverResult := dbQuery.QueryRdBugCarryOverWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	// for account, result := range bugCarryOverResult {
+	// 	if _, ok := kpiGrades[account]; ok {
+	// 		tmp := kpiGrades[account]
+	// 		if tmp.TestTaskCount > 0 {
+	// 			tmp.BugCarryOverRate = result.BugCarryOverRate
+	// 			tmp.BugCarryStandard = result.BugCarryOverRateStandard
+	// 			tmp.BugCarryStandardGrade = result.BugCarryOverRateStandard * BUG_CARRY_OVER_STANDARD
+	// 			tmp.TotalGrade += tmp.BugCarryStandardGrade
+	// 			kpiGrades[account] = tmp
+	// 		}
 
-		}
-	}
+	// 	}
+	// }
 
 	// 項目版本bug遗留實際情況 無測試報告
 	bugCarryDetailResult := dbQuery.QueryRdBugCarryOverDetailWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
+			tmp.BugCarryOverRate = 0
+			activeBugCount := float64(0)
+			fixBugCount := float64(0)
 			for _, r := range result {
 				projectName := ""
 				if r.ProjectName == nil {
 					projectName = ""
 				} else {
 					projectName = *r.ProjectName
+				}
+
+				if r.BugStatus == "active" {
+					activeBugCount++
+				} else {
+					fixBugCount++
 				}
 				tmp.BugInfoList = append(tmp.BugInfoList, BugCarryInfo{
 					Account:       r.Account,
@@ -291,6 +306,13 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 					BugStatus:     r.BugStatus,
 				})
 			}
+			// 如果bug总数大于0 算出bug遗留率
+			if activeBugCount + fixBugCount > 0 {
+				tmp.BugCarryOverRate = activeBugCount / (activeBugCount + fixBugCount)
+			}
+			tmp.BugCarryStandard = common.GetBugStandard(tmp.BugCarryOverRate)
+			tmp.BugCarryStandardGrade = tmp.BugCarryStandard * BUG_CARRY_OVER_STANDARD
+			tmp.TotalGrade += tmp.BugCarryStandardGrade
 			kpiGrades[account] = tmp
 		}
 	}

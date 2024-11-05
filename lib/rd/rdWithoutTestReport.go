@@ -14,10 +14,10 @@ const (
 	STORY_BASE_SCORE_WITHOUT_TESTREPORT = 0.021 // 分值
 
 	// 需求完成率 分值
-	STORY_STANDARD_WITHOUT_TESTREPORT = 45
+	STORY_STANDARD_WITHOUT_TESTREPORT = 40
 
 	// bug遗留率 分值
-	BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT = 20
+	BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT = 25
 	
 	// 工时预估达成比 分值
 	TIME_ESTIMATE_STANDARD_WITHOUT_TESTREPORT = 15
@@ -101,10 +101,12 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 			Account: account,
 			StartTime: l.StartTime,
 			EndTime: l.EndTime,
+			BugCarryStandardGrade: BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT,
 		}
 	}
 
 	// 项目进度完成情况
+	fmt.Print("项目进度完成情况\n")
 	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectProgressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -126,6 +128,11 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 
 				tmp.RealTotalSaturdays += float64(realSaturdays) / 2
 				tmp.RealTotalSundays += float64(realSundays)
+
+				tmp.ProjectTotalSaturdays = 0
+				tmp.ProjectTotalSundays = 0
+				tmp.RealTotalSaturdays = 0
+				tmp.RealTotalSundays = 0
 			}
 			fmt.Printf("account: %v, ProjectTotalSaturdays: %v, ProjectTotalSundays: %v, RealTotalSaturdays: %v, RealTotalSundays: %v\n", account, tmp.ProjectTotalSaturdays, tmp.ProjectTotalSundays, tmp.RealTotalSaturdays, tmp.RealTotalSundays)
 			kpiGrades[account] = tmp
@@ -134,6 +141,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 
 
 	// 项目进度达成率
+	fmt.Print("项目进度达成率\n")
 	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range projectProgressResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -165,6 +173,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	// }
 
 	// 需求完成情况
+	fmt.Print("需求完成情况\n")
 	storyDetailResult := dbQuery.QueryRdStoryDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range storyDetailResult {
 		if _, ok := kpiGrades[account]; ok {
@@ -192,29 +201,41 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	}
 
 	// 项目版本bug遗留率 无测试报告
-	bugCarryOverResult := dbQuery.QueryRdBugCarryOverWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
-	for account, result := range bugCarryOverResult {
-		if _, ok := kpiGrades[account]; ok {
-			tmp := kpiGrades[account]
-			tmp.BugCarryOverRate = result.BugCarryOverRate
-			tmp.BugCarryStandard = result.BugCarryOverRateStandard
-			tmp.BugCarryStandardGrade = result.BugCarryOverRateStandard * BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT
-			tmp.TotalGrade += tmp.BugCarryStandardGrade
-			kpiGrades[account] = tmp
-		}
-	}
+	// fmt.Print("项目版本bug遗留率 无测试报告\n")
+	// bugCarryOverResult := dbQuery.QueryRdBugCarryOverWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	// for account, result := range bugCarryOverResult {
+	// 	if _, ok := kpiGrades[account]; ok {
+	// 		tmp := kpiGrades[account]
+	// 		tmp.BugCarryOverRate = result.BugCarryOverRate
+	// 		tmp.BugCarryStandard = result.BugCarryOverRateStandard
+	// 		fmt.Printf("account: %v, BugCarryOverRate: %v, BugCarryStandard: %v\n", account, tmp.BugCarryOverRate, tmp.BugCarryStandard)
+	// 		tmp.BugCarryStandardGrade = result.BugCarryOverRateStandard * BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT
+	// 		tmp.TotalGrade += tmp.BugCarryStandardGrade
+	// 		kpiGrades[account] = tmp
+	// 	}
+	// }
 
 	// 項目版本bug遗留實際情況 无测试报告
+	fmt.Print("項目版本bug遗留实际情况 无测试报告\n")
 	bugCarryDetailResult := dbQuery.QueryRdBugCarryOverDetailWithoutTestReport(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range bugCarryDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
+			tmp.BugCarryOverRate = 0
+			activeBugCount := float64(0)
+			fixBugCount := float64(0)
 			for _, r := range result {
 				projectName := ""
 				if r.ProjectName == nil {
 					projectName = ""
 				} else {
 					projectName = *r.ProjectName
+				}
+
+				if r.BugStatus == "active" {
+					activeBugCount++
+				} else {
+					fixBugCount++
 				}
 				tmp.BugInfoList = append(tmp.BugInfoList, BugCarryInfoWithoutTestReport{
 					Account: r.Account,
@@ -225,6 +246,13 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 					BugStatus: r.BugStatus,
 				})
 			}
+			// 如果bug总数大于0 算出bug遗留率
+			if activeBugCount + fixBugCount > 0 {
+				tmp.BugCarryOverRate = activeBugCount / (activeBugCount + fixBugCount)
+			}
+			tmp.BugCarryStandard = common.GetBugStandard(tmp.BugCarryOverRate)
+			tmp.BugCarryStandardGrade = tmp.BugCarryStandard * BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT
+			tmp.TotalGrade += tmp.BugCarryStandardGrade
 			kpiGrades[account] = tmp
 		}
 	}
@@ -232,6 +260,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 
 
 	// 工时预估达成比
+	fmt.Print("工时预估达成比\n")
 	timeEstimateRateResult := dbQuery.QueryRdTimeEstimateRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range timeEstimateRateResult {
 		if _, ok := kpiGrades[account]; ok {
