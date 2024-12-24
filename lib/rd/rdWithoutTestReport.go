@@ -14,21 +14,22 @@ const (
 	STORY_BASE_SCORE_WITHOUT_TESTREPORT = 0.021 // 分值
 
 	// 需求完成率 分值
-	STORY_STANDARD_WITHOUT_TESTREPORT = 40
+	STORY_STANDARD_WITHOUT_TESTREPORT = 30
 
 	// bug遗留率 分值
 	BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT = 25
-	
+
 	// 工时预估达成比 分值
 	TIME_ESTIMATE_STANDARD_WITHOUT_TESTREPORT = 15
 )
 
 type (
 	RdWithoutTestReportKpi struct {
-		Accounts []string // rd的账号
-		Db       *sql.DB  // 数据库连接
+		Accounts  []string // rd的账号
+		Db        *sql.DB  // 数据库连接
 		StartTime string
-		EndTime string
+		EndTime   string
+		Pms       []string // 关联的项目经理
 	}
 
 	RdWithoutTestReportKpiGrade struct {
@@ -57,23 +58,23 @@ type (
 		StoryList       []StoryInfo // 需求详情
 
 		// bug遗留率
-		BugCarryOverRate float64        // bug遗留率
-		BugCarryStandard float64        // bug遗留率基数
-		BugCarryStandardGrade float64   // bug遗留率 实际分数
-		BugInfoList      []BugCarryInfoWithoutTestReport // bug遗留详情
+		BugCarryOverRate      float64                         // bug遗留率
+		BugCarryStandard      float64                         // bug遗留率基数
+		BugCarryStandardGrade float64                         // bug遗留率 实际分数
+		BugInfoList           []BugCarryInfoWithoutTestReport // bug遗留详情
 
 		// 工时预估达成比
-		TimeEstimateRate     float64 // 工时预估达成比
-		TimeEstimateStandard float64 // 工时预估基数
+		TimeEstimateRate          float64 // 工时预估达成比
+		TimeEstimateStandard      float64 // 工时预估基数
 		TimeEstimateStandardGrade float64 // 工时预估实际分数
 
-		TotalGrade float64 // 总分数
+		TotalGrade         float64 // 总分数
 		TotalGradeStandard float64 // 总分数基数
 	}
 
 	BugCarryInfoWithoutTestReport struct {
 		Account       string // 禅道账号
-		ProjectName    string // 项目名称
+		ProjectName   string // 项目名称
 		BugId         int64  // bug id
 		BugTitle      string // bug标题
 		BugResolution string // bug解决方案
@@ -82,12 +83,13 @@ type (
 )
 
 // NewRdKpi 创建一个研发KPI对象
-func NewRdKpiWithoutTestReport(db *sql.DB, accounts []string, startTime, endTime string) *RdWithoutTestReportKpi {
+func NewRdKpiWithoutTestReport(db *sql.DB, accounts, rdpms []string, startTime, endTime string) *RdWithoutTestReportKpi {
 	return &RdWithoutTestReportKpi{
-		Accounts: accounts,
-		Db:       db,
+		Accounts:  accounts,
+		Db:        db,
 		StartTime: startTime,
-		EndTime: endTime,
+		EndTime:   endTime,
+		Pms:       rdpms,
 	}
 }
 
@@ -98,16 +100,17 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 	// 建立所有账户啊kpi信息
 	for _, account := range l.Accounts {
 		kpiGrades[account] = RdWithoutTestReportKpiGrade{
-			Account: account,
-			StartTime: l.StartTime,
-			EndTime: l.EndTime,
+			Account:               account,
+			StartTime:             l.StartTime,
+			EndTime:               l.EndTime,
 			BugCarryStandardGrade: BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT,
+			TotalGrade: BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT, // 起始總分先加bug分 25分
 		}
 	}
 
 	// 项目进度完成情况
 	fmt.Print("项目进度完成情况\n")
-	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.Pms, l.StartTime, l.EndTime)
 	for account, result := range projectProgressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -115,13 +118,13 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 				planSaturdays, planSundays := common.CountWeekends(r.Begin, r.End)
 				realSaturdays, realSundays := common.CountWeekends(r.Begin, r.RealEnd)
 				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfo{
-					ProjectId:  r.ProjectId,
+					ProjectId:   r.ProjectId,
 					ProjectName: r.ProjectName,
-					Begin:      r.Begin,
-					End:        r.End,
-					RealEnd:    r.RealEnd,
-					PlanDiff:   r.PlanDiff - float64(planSaturdays + planSundays),
-					RealDiff:   r.RealDiff - float64(realSaturdays + realSundays),
+					Begin:       r.Begin,
+					End:         r.End,
+					RealEnd:     r.RealEnd,
+					PlanDiff:    r.PlanDiff - float64(planSaturdays+planSundays),
+					RealDiff:    r.RealDiff - float64(realSaturdays+realSundays),
 				})
 				tmp.ProjectTotalSaturdays += float64(planSaturdays) / 2
 				tmp.ProjectTotalSundays += float64(planSundays)
@@ -139,10 +142,9 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 		}
 	}
 
-
 	// 项目进度达成率
 	fmt.Print("项目进度达成率\n")
-	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.Pms, l.StartTime, l.EndTime)
 	for account, result := range projectProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -183,11 +185,11 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 				score := r.Estimate / STORY_BASE_TIME * STORY_BASE_SCORE_WITHOUT_TESTREPORT
 				totalScore += score
 				tmp.StoryList = append(tmp.StoryList, StoryInfo{
-					Id: r.StoryId,
-					Account: r.Account,
-					Title: r.Title,
+					Id:       r.StoryId,
+					Account:  r.Account,
+					Title:    r.Title,
 					Estimate: r.Estimate,
-					Score: score,
+					Score:    score,
 				})
 			}
 			if totalScore > STORY_STANDARD_WITHOUT_TESTREPORT {
@@ -238,26 +240,24 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 					fixBugCount++
 				}
 				tmp.BugInfoList = append(tmp.BugInfoList, BugCarryInfoWithoutTestReport{
-					Account: r.Account,
-					ProjectName: projectName,
-					BugId: r.BugId,
-					BugTitle: r.BugTitle,
+					Account:       r.Account,
+					ProjectName:   projectName,
+					BugId:         r.BugId,
+					BugTitle:      r.BugTitle,
 					BugResolution: r.BugResolution,
-					BugStatus: r.BugStatus,
+					BugStatus:     r.BugStatus,
 				})
 			}
 			// 如果bug总数大于0 算出bug遗留率
-			if activeBugCount + fixBugCount > 0 {
+			if activeBugCount+fixBugCount > 0 {
 				tmp.BugCarryOverRate = activeBugCount / (activeBugCount + fixBugCount)
 			}
 			tmp.BugCarryStandard = common.GetBugStandard(tmp.BugCarryOverRate)
 			tmp.BugCarryStandardGrade = tmp.BugCarryStandard * BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT
-			tmp.TotalGrade += tmp.BugCarryStandardGrade
+			tmp.TotalGrade += tmp.BugCarryStandardGrade - BUG_CARRY_OVER_STANDARD_WITHOUT_TESTREPORT // 有bug的記得先扣掉起始加的25分
 			kpiGrades[account] = tmp
 		}
 	}
-
-
 
 	// 工时预估达成比
 	fmt.Print("工时预估达成比\n")
@@ -280,7 +280,7 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 		// 	tmp.TotalGrade -= tmp.BugCarryStandardGrade
 		// 	tmp.TotalGrade += BUG_CARRY_OVER_STANDARD
 		// }
-		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(tmp.TotalGrade)
+		tmp.TotalGradeStandard = l.GetKpiGradeStandard(tmp.TotalGrade)
 		kpiGrades[account] = tmp
 	}
 
@@ -288,12 +288,12 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 }
 
 // 计算得分系数
-func (l *RdWithoutTestReportKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
-	if totalGrade >= 100 {
+func (l *RdWithoutTestReportKpi) GetKpiGradeStandard(totalGrade float64) float64 {
+	if totalGrade >= 90 {
 		return TOP_COEFFICIENT
-	} else if totalGrade < 100 && totalGrade >= 80 {
+	} else if totalGrade < 90 && totalGrade >= 70 {
 		return SECOND_COEFFICIENT
-	} else if totalGrade < 80 && totalGrade >= 60 {
+	} else if totalGrade < 70 && totalGrade >= 60 {
 		return THIRD_COEFFICIENT
 	}
 	return 0

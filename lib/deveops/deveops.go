@@ -39,6 +39,7 @@ type (
 		Db       *sql.DB  // 数据库连接
 		StartTime string
 		EndTime string
+		Pms []string // 项目经理
 	}
 
 	DeveopsKpiGrade struct {
@@ -107,12 +108,13 @@ type (
 
 
 // NewDeveopsKpi 创建一个运维KPI对象
-func NewDeveopsKpi(db *sql.DB, accounts []string, startTime, endTime string) *DeveopsKpi {
+func NewDeveopsKpi(db *sql.DB, accounts, pms []string, startTime, endTime string) *DeveopsKpi {
 	return &DeveopsKpi{
 		Accounts: accounts,
 		Db:       db,
 		StartTime: startTime,
 		EndTime: endTime,
+		Pms: pms,
 	}
 }
 
@@ -131,7 +133,7 @@ func (l *DeveopsKpi) GetDeveopsKpiGrade() map[string]DeveopsKpiGrade {
 	}
 
 	// 项目进度完成情况
-	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.Pms, l.StartTime, l.EndTime)
 	for account, result := range projectProgressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -160,7 +162,7 @@ func (l *DeveopsKpi) GetDeveopsKpiGrade() map[string]DeveopsKpiGrade {
 
 
 	// 项目进度达成率
-	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.Pms, l.StartTime, l.EndTime)
 	for account, result := range projectProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]

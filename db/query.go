@@ -218,7 +218,7 @@ type (
 )
 
 // 软件研发项目进度延时率
-func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryRdProjectProgressResult {
+func QueryRdProjectProgress(db *sql.DB, accounts, rdpms []string, startTime, endTime string) map[string]QueryRdProjectProgressResult {
 	results := map[string]QueryRdProjectProgressResult{}
 	sqlCmd := fmt.Sprintf(`
 		select tmp.account, SUM(tmp.plan_diff) as sum_plan_diff, SUM(tmp.real_diff) as sum_real_diff
@@ -226,12 +226,12 @@ func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime st
 		select a.account,c.name, c.begin ,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.begin,c.end) as plan_diff, TIMESTAMPDIFF(DAY,c.begin,c.realEnd) as real_diff
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
-		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private") and openedBy in ("shawn.wang", "qixiaofeng", "guoqiao.chen")
+		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private") and openedBy in (%s)
 		where a.account in (%s) and c.realEnd between "%s" and "%s"
 		order by a.account,c.realEnd desc
 		) tmp
 		group by account
-	`, common.AccountArrayToString(accounts), startTime, endTime)
+	`, common.AccountArrayToString(rdpms), common.AccountArrayToString(accounts), startTime, endTime)
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
 	if err != nil {
@@ -259,16 +259,16 @@ func QueryRdProjectProgress(db *sql.DB, accounts []string, startTime, endTime st
 }
 
 // 软件研发项目进度延时率-完成情况
-func QueryRdProjectProgressDetail(db *sql.DB, accounts []string, startTime, endTime string) map[string][]QueryRdProjectProgressDetailResult {
+func QueryRdProjectProgressDetail(db *sql.DB, accounts, rdpms []string, startTime, endTime string) map[string][]QueryRdProjectProgressDetailResult {
 	results := map[string][]QueryRdProjectProgressDetailResult{}
 	sqlCmd := fmt.Sprintf(`
 		select a.account, c.id as project_id ,c.name as project_name, c.begin , c.end, c.realEnd, TIMESTAMPDIFF(DAY,c.begin,c.end) as plan_diff, TIMESTAMPDIFF(DAY,c.begin,c.realEnd) as real_diff
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
-		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.deleted="0" and c.acl in ("open", "private") and openedBy in ("shawn.wang", "qixiaofeng", "guoqiao.chen")
+		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.deleted="0" and c.acl in ("open", "private") and openedBy in (%s)
 		where a.account in (%s) and c.realEnd between "%s" and "%s"
 		order by a.account,c.realEnd desc
-	`, common.AccountArrayToString(accounts), startTime, endTime)
+	`, common.AccountArrayToString(rdpms), common.AccountArrayToString(accounts), startTime, endTime)
 	fmt.Println(sqlCmd)
 	rows, err := db.Query(sqlCmd)
 	if err != nil {
@@ -619,7 +619,7 @@ func QueryRdBugCarryOverDetailWithoutTestReport(db *sql.DB, accounts []string, s
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, ProjectName: %s, BugId: %d, BugTitle: %s, BugResolution: %s, BugStatus: %s\n", result.Account, result.ProjectName, result.BugId, result.BugTitle, result.BugResolution, result.BugStatus)
+		fmt.Printf("Account: %s, ProjectName: %s, BugId: %d, BugTitle: %s, BugResolution: %s, BugStatus: %s\n", result.Account, *result.ProjectName, result.BugId, result.BugTitle, result.BugResolution, result.BugStatus)
 
 		results[result.Account] = append(results[result.Account], result)
 	}

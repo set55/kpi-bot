@@ -25,8 +25,8 @@ func NewBot(db *sql.DB) *Bot {
 
 
 
-func (l *Bot) ProduceRdKpi(templatePath, startTime, endTime string, accounts []string) error {
-	kpiManager := rd.NewRdKpi(l.Db, accounts, startTime, endTime)
+func (l *Bot) ProduceRdKpi(templatePath, startTime, endTime string, accounts, pms []string) error {
+	kpiManager := rd.NewRdKpi(l.Db, accounts, pms, startTime, endTime)
 	kpiGrades := kpiManager.GetRdKpiGrade()
 
 	for _, kpiGrade := range kpiGrades {
@@ -39,8 +39,8 @@ func (l *Bot) ProduceRdKpi(templatePath, startTime, endTime string, accounts []s
 }
 
 
-func (l *Bot) ProduceRdKpiWithoutTestReport(templatePath, startTime, endTime string, accounts []string) error {
-	kpiManager := rd.NewRdKpiWithoutTestReport(l.Db, accounts, startTime, endTime)
+func (l *Bot) ProduceRdKpiWithoutTestReport(templatePath, startTime, endTime string, accounts, pms []string) error {
+	kpiManager := rd.NewRdKpiWithoutTestReport(l.Db, accounts, pms, startTime, endTime)
 	kpiGrades := kpiManager.GetRdKpiWithoutTestReportGrade()
 
 	for _, kpiGrade := range kpiGrades {
@@ -93,9 +93,9 @@ func (l *Bot) ProduceTestKpi(templatePath, startTime, endTime string, accounts, 
 
 
 
-func (l *Bot) ProduceStatisticKpi(tmplatePath, startTime, endTime string, rds, rdWithouts, pms, pmWithouts, tests, storyPms []string) error {
-	rdkpiManager := rd.NewRdKpi(l.Db, rds, startTime, endTime)
-	rdWithoutKpiManager := rd.NewRdKpiWithoutTestReport(l.Db, rdWithouts, startTime, endTime)
+func (l *Bot) ProduceStatisticKpi(tmplatePath, startTime, endTime string, rds, rdWithouts, pms, pmWithouts, tests, storyPms, rdpms, rdwithouPms []string) error {
+	rdkpiManager := rd.NewRdKpi(l.Db, rds, rdpms, startTime, endTime)
+	rdWithoutKpiManager := rd.NewRdKpiWithoutTestReport(l.Db, rdWithouts, rdwithouPms, startTime, endTime)
 	pmKpiManager := pm.NewPmKpi(l.Db, pms, startTime, endTime)
 	pmWithoutKpiManager := pm.NewPmKpiWithoutTestReport(l.Db, pmWithouts, startTime, endTime)
 	testKpiManager := test.NewTestKpi(l.Db, tests, storyPms, startTime, endTime)
@@ -115,8 +115,8 @@ func (l *Bot) ProduceStatisticKpi(tmplatePath, startTime, endTime string, rds, r
 	return nil
 }
 
-func (l *Bot) ProduceDeveopsKpi(templatePath, startTime, endTime string, accounts []string) error {
-	kpiManager := deveops.NewDeveopsKpi(l.Db, accounts, startTime, endTime)
+func (l *Bot) ProduceDeveopsKpi(templatePath, startTime, endTime string, accounts, pms []string) error {
+	kpiManager := deveops.NewDeveopsKpi(l.Db, accounts, pms, startTime, endTime)
 	kpiGrades := kpiManager.GetDeveopsKpiGrade()
 
 	for _, kpiGrade := range kpiGrades {

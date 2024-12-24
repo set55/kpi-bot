@@ -64,6 +64,18 @@ func AccountToName(account string) string {
 		return "王少宇"
 	case "simon.chen":
 		return "陈熙存"
+	case "jiangjiahui":
+		return "姜嘉慧"
+	case "chenyuanchong":
+		return "陈源崇"
+	case "pengzijie":
+		return "彭子杰"
+	case "qihongquan":
+		return "齐红全"
+	case "zhangzhilun":
+		return "张智伦"
+	case "zhuangjianyong":
+		return "庄剑勇"
 	default:
 		return account
 	}
@@ -89,6 +101,7 @@ func GetRewardByAccount(account string) float64 {
 	case "justin.lee":
 		return 0
 	case "shawn.wang":
+		// return 0
 		return 2000
 	case "samy.gou":
 		return 0
@@ -98,6 +111,7 @@ func GetRewardByAccount(account string) float64 {
 		return 1000
 	case "shiwen.tin":
 		return 2000
+		// return 0
 	case "guoqiao.chen":
 		return 3000
 	case "xiechen":
@@ -117,7 +131,7 @@ func GetRewardByAccount(account string) float64 {
 	case "liuhongtao":
 		return 2000
 	case "wangtuhe":
-		return 2000
+		return 0
 	case "deakin.han":
 		return 3500
 	case "qixiaofeng":
@@ -126,6 +140,8 @@ func GetRewardByAccount(account string) float64 {
 		return 3000
 	case "simon.chen":
 		return 2000
+	case "pengzijie":
+		return 0
 	default:
 		return 0
 	}

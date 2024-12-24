@@ -16,7 +16,7 @@ const (
 	VALIDATE_BUG_RATE_STANDARD = 30
 
 	// bug转需求数
-	BUG_TO_STORY_NUM_STANDARD = 30
+	BUG_TO_STORY_NUM_STANDARD = 20
 	BUG_ONE_GRADE             = 3
 
 	// 用例发现bug率
@@ -25,7 +25,7 @@ const (
 	// 系数
 	TOP_COEFFICIENT    = 1.2
 	SECOND_COEFFICIENT = 1.0
-	THIRD_COEFFICIENT  = 0.7
+	THIRD_COEFFICIENT  = 0.8
 )
 
 type (
@@ -210,7 +210,7 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 	// 结算系数
 	for account, kpiGrade := range kpiGrades {
 		tmp := kpiGrades[account]
-		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(kpiGrade.TotalGrade)
+		tmp.TotalGradeStandard = l.GetKpiGradeStandard(kpiGrade.TotalGrade)
 		kpiGrades[account] = tmp
 	}
 
@@ -218,12 +218,12 @@ func (l *TestKpi) GetTestKpiGrade() map[string]TestKpiGrade {
 }
 
 // 计算得分系数
-func (l *TestKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
-	if totalGrade >= 100 {
+func (l *TestKpi) GetKpiGradeStandard(totalGrade float64) float64 {
+	if totalGrade >= 90 {
 		return TOP_COEFFICIENT
-	} else if totalGrade < 100 && totalGrade >= 80 {
+	} else if totalGrade < 90 && totalGrade >= 70 {
 		return SECOND_COEFFICIENT
-	} else if totalGrade < 80 && totalGrade >= 60 {
+	} else if totalGrade < 60 && totalGrade >= 70 {
 		return THIRD_COEFFICIENT
 	}
 	return 0

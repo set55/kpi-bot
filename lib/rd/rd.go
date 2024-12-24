@@ -11,10 +11,10 @@ const (
 	PROJECT_PROGRESS_STANDARD = 30
 
 	// 需求完成率 分值
-	STORY_STANDARD = 40
+	STORY_STANDARD = 30
 
 	// 需求基础 分值
-	STORY_BASE_TIME = 0.1 // 小时
+	STORY_BASE_TIME  = 0.1   // 小时
 	STORY_BASE_SCORE = 0.021 // 分值
 
 	// bug遗留率 分值
@@ -29,7 +29,7 @@ const (
 	// 系数
 	TOP_COEFFICIENT    = 1.2
 	SECOND_COEFFICIENT = 1.0
-	THIRD_COEFFICIENT  = 0.7
+	THIRD_COEFFICIENT  = 0.8
 
 	// 项目进度延时率基数
 	PROJECT_PROGRESS_Level1 = 1.5
@@ -37,16 +37,15 @@ const (
 	PROJECT_PROGRESS_Level3 = 1
 	PROJECT_PROGRESS_Level4 = 0.8
 	PROJECT_PROGRESS_Level5 = 0.5
-
 )
 
 type (
 	RdKpi struct {
-
 		Accounts  []string // rd的账号
 		Db        *sql.DB  // 数据库连接
 		StartTime string   // 开始时间
 		EndTime   string   // 结束时间
+		Pms       []string // 关联的项目经理
 	}
 
 	RdKpiGrade struct {
@@ -99,7 +98,7 @@ type (
 	}
 
 	ProjectProgressInfo struct {
-		ProjectId   int  // 项目id
+		ProjectId   int     // 项目id
 		ProjectName string  // 项目名称
 		Begin       string  // 计划开始时间
 		End         string  // 计划结束时间
@@ -135,12 +134,13 @@ type (
 )
 
 // NewRdKpi 创建一个研发KPI对象
-func NewRdKpi(db *sql.DB, accounts []string, startTime, endTime string) *RdKpi {
+func NewRdKpi(db *sql.DB, accounts, pms []string, startTime, endTime string) *RdKpi {
 	return &RdKpi{
 		Accounts:  accounts,
 		Db:        db,
 		StartTime: startTime,
 		EndTime:   endTime,
+		Pms:       pms,
 	}
 }
 
@@ -151,15 +151,16 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	// 建立所有账户啊kpi信息
 	for _, account := range l.Accounts {
 		kpiGrades[account] = RdKpiGrade{
-			Account:   account,
-			StartTime: l.StartTime,
-			EndTime:   l.EndTime,
+			Account:               account,
+			StartTime:             l.StartTime,
+			EndTime:               l.EndTime,
 			BugCarryStandardGrade: BUG_CARRY_OVER_STANDARD,
+			TotalGrade: BUG_CARRY_OVER_STANDARD, // 起始總分先加bug分 25分
 		}
 	}
 
 	// 项目进度完成情况
-	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	projectProgressDetailResult := dbQuery.QueryRdProjectProgressDetail(l.Db, l.Accounts, l.Pms, l.StartTime, l.EndTime)
 	for account, result := range projectProgressDetailResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -168,13 +169,13 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 				realSaturdays, realSundays := common.CountWeekends(r.Begin, r.RealEnd)
 
 				tmp.ProjectProgressList = append(tmp.ProjectProgressList, ProjectProgressInfo{
-					ProjectId:  r.ProjectId,
+					ProjectId:   r.ProjectId,
 					ProjectName: r.ProjectName,
-					Begin:      r.Begin,
-					End:        r.End,
-					RealEnd:    r.RealEnd,
-					PlanDiff:   r.PlanDiff - float64(planSaturdays + planSundays),
-					RealDiff:   r.RealDiff - float64(realSaturdays + realSundays),
+					Begin:       r.Begin,
+					End:         r.End,
+					RealEnd:     r.RealEnd,
+					PlanDiff:    r.PlanDiff - float64(planSaturdays+planSundays),
+					RealDiff:    r.RealDiff - float64(realSaturdays+realSundays),
 				})
 
 				tmp.ProjectTotalSaturdays += float64(planSaturdays) / 2
@@ -193,7 +194,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 	}
 
 	// 项目进度达成率
-	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	projectProgressResult := dbQuery.QueryRdProjectProgress(l.Db, l.Accounts, l.Pms, l.StartTime, l.EndTime)
 	for account, result := range projectProgressResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
@@ -307,12 +308,12 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 				})
 			}
 			// 如果bug总数大于0 算出bug遗留率
-			if activeBugCount + fixBugCount > 0 {
+			if activeBugCount+fixBugCount > 0 {
 				tmp.BugCarryOverRate = activeBugCount / (activeBugCount + fixBugCount)
 			}
 			tmp.BugCarryStandard = common.GetBugStandard(tmp.BugCarryOverRate)
 			tmp.BugCarryStandardGrade = tmp.BugCarryStandard * BUG_CARRY_OVER_STANDARD
-			tmp.TotalGrade += tmp.BugCarryStandardGrade
+			tmp.TotalGrade += tmp.BugCarryStandardGrade - BUG_CARRY_OVER_STANDARD // 有bug的記得先扣掉起始加的25分
 			kpiGrades[account] = tmp
 		}
 	}
@@ -368,7 +369,7 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 		// 	tmp.TotalGrade -= tmp.BugCarryStandardGrade
 		// 	tmp.TotalGrade += BUG_CARRY_OVER_STANDARD
 		// }
-		tmp.TotalGradeStandard = l.GetRdKpiGradeStandard(tmp.TotalGrade)
+		tmp.TotalGradeStandard = l.GetKpiGradeStandard(tmp.TotalGrade)
 		kpiGrades[account] = tmp
 	}
 
@@ -376,12 +377,12 @@ func (l *RdKpi) GetRdKpiGrade() map[string]RdKpiGrade {
 }
 
 // 计算得分系数
-func (l *RdKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
-	if totalGrade >= 100 {
+func (l *RdKpi) GetKpiGradeStandard(totalGrade float64) float64 {
+	if totalGrade >= 90 {
 		return TOP_COEFFICIENT
-	} else if totalGrade < 100 && totalGrade >= 80 {
+	} else if totalGrade < 90 && totalGrade >= 70 {
 		return SECOND_COEFFICIENT
-	} else if totalGrade < 80 && totalGrade >= 60 {
+	} else if totalGrade < 70 && totalGrade >= 60 {
 		return THIRD_COEFFICIENT
 	}
 	return 0
@@ -392,7 +393,7 @@ func GetRdProjectProgressStandard(avgDiffRate float64) float64 {
 		return PROJECT_PROGRESS_Level1
 	} else if avgDiffRate > -0.5 && avgDiffRate <= -0.2 {
 		return PROJECT_PROGRESS_Level2
-	}else if avgDiffRate > -0.2 && avgDiffRate <= 0 {
+	} else if avgDiffRate > -0.2 && avgDiffRate <= 0 {
 		return PROJECT_PROGRESS_Level3
 	} else if avgDiffRate > 0 && avgDiffRate <= 0.2 {
 		return PROJECT_PROGRESS_Level4
