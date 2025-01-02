@@ -619,7 +619,7 @@ func QueryRdBugCarryOverDetailWithoutTestReport(db *sql.DB, accounts []string, s
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
 
-		fmt.Printf("Account: %s, ProjectName: %s, BugId: %d, BugTitle: %s, BugResolution: %s, BugStatus: %s\n", result.Account, *result.ProjectName, result.BugId, result.BugTitle, result.BugResolution, result.BugStatus)
+		// fmt.Printf("Account: %s, ProjectName: %s, BugId: %d, BugTitle: %s, BugResolution: %s, BugStatus: %s\n", result.Account, *result.ProjectName, result.BugId, result.BugTitle, result.BugResolution, result.BugStatus)
 
 		results[result.Account] = append(results[result.Account], result)
 	}

@@ -76,6 +76,10 @@ func AccountToName(account string) string {
 		return "张智伦"
 	case "zhuangjianyong":
 		return "庄剑勇"
+	case "wangxianming":
+		return "王贤明"
+	case "caojianni":
+		return "曹俭妮"
 	default:
 		return account
 	}

@@ -36,11 +36,11 @@ func main() {
 
 	// 研发
 	rds := []string{"set.su", "paul.gao", "samy.gou", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
-	rdProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee", "jiangjiahui"}
+	rdProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee", "jiangjiahui", "caojianni"}
 	// rds := []string{"champion.fu"}
 	// 软件服务中心 研发
-	rdsWithoutTest := []string{"shiwen.tin", "xiechen", "zouyanling", "ruanbanyong", "zhouyao", "liuxiaoyan", "wangtuhe", "chenyuanchong", "qihongquan", "zhangzhilun", "zhuangjianyong"}
-	rdsWithoutTestProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee"}
+	rdsWithoutTest := []string{"shiwen.tin", "xiechen", "zouyanling", "ruanbanyong", "zhouyao", "liuxiaoyan", "wangtuhe", "chenyuanchong", "qihongquan", "zhangzhilun", "zhuangjianyong", "wangxianming"}
+	rdsWithoutTestProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee", "caojianni"}
 	// rdsWithoutTest := []string{"liuxiaoyan"}
 
 	// 阿崔部门 研发
@@ -51,7 +51,7 @@ func main() {
 	// tests := []string{"wangshaoyu"}
 
 	// 项目经理
-	pms := []string{"qixiaofeng", "jiangjiahui"}
+	pms := []string{"qixiaofeng", "jiangjiahui", "caojianni"}
 	pmsWithoutTest := []string{"guoqiao.chen", "shawn.wang","simon.chen"}
 	// pmsWithoutTest := []string{"guoqiao.chen"}
 
