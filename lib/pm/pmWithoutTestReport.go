@@ -178,7 +178,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 			tmp.SumProjectDiff = result.SumProjectDiff - tmp.ProjectTotalSaturdays - tmp.ProjectTotalSundays
 			tmp.SumRealProjectDiff = result.SumRealProjectDiff - tmp.RealTotalSaturdays - tmp.RealTotalSundays
 			tmp.DiffRate = common.GetProjectProgressExpectRate(tmp.SumProjectDiff, tmp.SumRealProjectDiff)
-			tmp.ProgressStandard = GetPmProjectProgressStandard(tmp.DiffRate)
+			tmp.ProgressStandard = GetPmProjectWithoutTestProgressStandard(tmp.DiffRate)
 			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.ProgressStandardGrade
 			kpiGrades[account] = tmp
@@ -317,4 +317,16 @@ func (l *PmKpiWithoutTestReport) GetRdKpiGradeStandardWithoutTestReport(totalGra
 		return THIRD_COEFFICIENT
 	}
 	return 0
+}
+
+func GetPmProjectWithoutTestProgressStandard(avgDiffRate float64) float64 {
+	if avgDiffRate <= 0 {
+		return PM_PROJECT_PROGRESS_Level2
+	} else if avgDiffRate > 0 && avgDiffRate <= 0.2 {
+		return PM_PROJECT_PROGRESS_Level4
+	} else if avgDiffRate > 0.2 && avgDiffRate <= 0.5 {
+		return PM_PROJECT_PROGRESS_Level5
+	} else {
+		return 0
+	}
 }

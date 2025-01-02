@@ -99,4 +99,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("error ProduceDeveopsKpi: %v", err)
 	}
+
+	// err = robot.ProduceWhatEverKpi("./excel/管理岗人才胜任力盘点2025.xlsx")
+	// if err != nil {
+	// 	log.Fatalf("error ProduceWhatEverKpi: %v", err)
+	// }
 }

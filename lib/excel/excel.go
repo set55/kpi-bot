@@ -7,6 +7,7 @@ import (
 	"kpi-bot/lib/pm"
 	"kpi-bot/lib/rd"
 	"kpi-bot/lib/test"
+	"math/rand"
 	"os"
 	"time"
 
@@ -550,7 +551,6 @@ func MakeTestExcel(path string, data test.TestKpiGrade) error {
 	return nil
 }
 
-
 // kpi统计
 func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]rd.RdKpiGrade, rdWithoutGrades map[string]rd.RdWithoutTestReportKpiGrade,
 	pmGrades map[string]pm.PmKpiGrade, pmWithout map[string]pm.PmKpiGradeWithoutTestReport, testsGrade map[string]test.TestKpiGrade) error {
@@ -572,12 +572,12 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 	month := t.Month()
 
 	statisticMap := map[string]int64{
-		"lower60": 0,
-		"60-69": 0,
-		"70-79": 0,
-		"80-89": 0,
-		"90-100": 0,
-		"101-110": 0,
+		"lower60":   0,
+		"60-69":     0,
+		"70-79":     0,
+		"80-89":     0,
+		"90-100":    0,
+		"101-110":   0,
 		"higher110": 0,
 	}
 
@@ -697,7 +697,6 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 	// G2 大于110
 	f.SetCellValue("Sheet1", "G2", statisticMap["higher110"])
 
-
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
 	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-kpi统计.xlsx", year, int(month), year, int(month))
@@ -719,7 +718,6 @@ func MakeKpiStatisticsExcel(path string, startTime string, rdGrades map[string]r
 	}
 	return nil
 }
-
 
 // 绩效考核-运维
 func MakeDeveopsExcel(path string, data deveops.DeveopsKpiGrade) error {
@@ -795,6 +793,80 @@ func MakeDeveopsExcel(path string, data deveops.DeveopsKpiGrade) error {
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
 	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-绩效考核模板-运维-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
+	// Check if the folder exists
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		// Create the folder if it does not exist
+		err := os.MkdirAll(folderPath, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("error creating folder: %v", err)
+		}
+		fmt.Println("Folder created successfully.")
+	} else {
+		fmt.Println("Folder already exists.")
+	}
+
+	// Save the modified file
+	if err = f.SaveAs(filePath); err != nil {
+		return fmt.Errorf("save as %v, err: %v", filePath, err)
+	}
+	return nil
+}
+
+// 绩效考核-运维
+func MakeWhatEverExcel(path string) error {
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		return fmt.Errorf("open file fail: %v", err)
+	}
+	defer f.Close()
+
+	columns := []string{"J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"}
+
+	// for _, col := range columns {
+	// 	for i := 5; i <= 41; i++ {
+	// 		randomValue := rand.Intn(5) + 6 // Generate a random value between 70 and 90
+	// 		f.SetCellValue("管理岗汇总", fmt.Sprintf("%v%v", col, i), fmt.Sprintf("%v", randomValue))
+	// 	}
+	// }
+
+	for i := 5; i <= 41; i++ {
+		tmpTotalGrade := 0
+		for _, col := range columns {
+			if col != "T" && col != "U" && col != "V" {
+				randomValue := rand.Intn(4) + 6 // Generate a random value between 5 and 10
+				tmpTotalGrade += randomValue
+				f.SetCellValue("管理岗汇总", fmt.Sprintf("%v%v", col, i), fmt.Sprintf("%v", randomValue))
+			}
+
+			if col == "T" {
+				f.SetCellValue("管理岗汇总", fmt.Sprintf("%v%v", col, i), fmt.Sprintf("%v", tmpTotalGrade))
+			}
+
+			if col == "U" {
+				tmpAbility := "低"
+				if tmpTotalGrade >= 70 && tmpTotalGrade <= 89 {
+					tmpAbility = "中"
+				}
+
+				if tmpTotalGrade >= 90 && tmpTotalGrade <= 100 {
+					tmpAbility = "高"
+				}
+				f.SetCellValue("管理岗汇总", fmt.Sprintf("%v%v", col, i), tmpAbility)
+			}
+
+			if col == "V" {
+				abilities := []string{"中", "高"}
+                randomAbility := abilities[rand.Intn(len(abilities))]
+				f.SetCellValue("管理岗汇总", fmt.Sprintf("%v%v", col, i), randomAbility)
+			}
+
+		}
+
+	}
+
+	// 建立资料夹
+	folderPath := fmt.Sprintf("./export/管理岗人才胜任盘点2025")
+	filePath := fmt.Sprintf("./export/管理岗人才胜任盘点2025/管理岗人才胜任盘点2025.xlsx")
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist

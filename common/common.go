@@ -145,7 +145,7 @@ func GetRewardByAccount(account string) float64 {
 	case "simon.chen":
 		return 2000
 	case "pengzijie":
-		return 0
+		return 1000
 	default:
 		return 0
 	}

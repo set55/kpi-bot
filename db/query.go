@@ -1142,7 +1142,7 @@ func QueryProjectCompleteRate(db *sql.DB, accounts []string, startTime, endTime 
 	results := map[string]QueryProjectCompleteRateResult{}
 	sqlCmd := fmt.Sprintf(`
 		select account,AVG(devleoped_num/project_storys) as complete_rate,
-		case when AVG(devleoped_num/project_storys) >= 0.95 then 1.2
+		case when AVG(devleoped_num/project_storys) >= 0.95 then 1.0
 			when AVG(devleoped_num/project_storys) >= 0.9 and AVG(devleoped_num/project_storys) < 0.95 then 1.0
 			when AVG(devleoped_num/project_storys) >= 0.8 and AVG(devleoped_num/project_storys) < 0.9 then 0.8
 			when AVG(devleoped_num/project_storys) >= 0.7 and AVG(devleoped_num/project_storys) < 0.8 then 0.5

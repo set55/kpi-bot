@@ -127,3 +127,11 @@ func (l *Bot) ProduceDeveopsKpi(templatePath, startTime, endTime string, account
 	}
 	return nil
 }
+
+func (l *Bot) ProduceWhatEverKpi(templatePath string) error {
+	err := excel.MakeWhatEverExcel(templatePath)
+	if err != nil {
+		return fmt.Errorf("make whatever excel fail: %v", err)
+	}
+	return nil
+}

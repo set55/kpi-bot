@@ -354,12 +354,8 @@ func (l *PmKpi) GetRdKpiGradeStandard(totalGrade float64) float64 {
 }
 
 func GetPmProjectProgressStandard(avgDiffRate float64) float64 {
-	if avgDiffRate <= -0.5 {
-		return PM_PROJECT_PROGRESS_Level1
-	} else if avgDiffRate > -0.5 && avgDiffRate <= -0.2 {
+	if avgDiffRate <= 0 {
 		return PM_PROJECT_PROGRESS_Level2
-	}else if avgDiffRate > -0.2 && avgDiffRate <= 0 {
-		return PM_PROJECT_PROGRESS_Level3
 	} else if avgDiffRate > 0 && avgDiffRate <= 0.2 {
 		return PM_PROJECT_PROGRESS_Level4
 	} else if avgDiffRate > 0.2 && avgDiffRate <= 0.5 {
