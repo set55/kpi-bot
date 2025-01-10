@@ -812,7 +812,7 @@ func MakeDeveopsExcel(path string, data deveops.DeveopsKpiGrade) error {
 	return nil
 }
 
-// 绩效考核-运维
+// 
 func MakeWhatEverExcel(path string) error {
 	f, err := excelize.OpenFile(path)
 	if err != nil {
@@ -867,6 +867,91 @@ func MakeWhatEverExcel(path string) error {
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/管理岗人才胜任盘点2025")
 	filePath := fmt.Sprintf("./export/管理岗人才胜任盘点2025/管理岗人才胜任盘点2025.xlsx")
+	// Check if the folder exists
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		// Create the folder if it does not exist
+		err := os.MkdirAll(folderPath, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("error creating folder: %v", err)
+		}
+		fmt.Println("Folder created successfully.")
+	} else {
+		fmt.Println("Folder already exists.")
+	}
+
+	// Save the modified file
+	if err = f.SaveAs(filePath); err != nil {
+		return fmt.Errorf("save as %v, err: %v", filePath, err)
+	}
+	return nil
+}
+
+
+func MakeWhatEverExcelNormal(path string) error {
+	f, err := excelize.OpenFile(path)
+	if err != nil {
+		return fmt.Errorf("open file fail: %v", err)
+	}
+	defer f.Close()
+
+	columns := []string{"J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"}
+
+	// for _, col := range columns {
+	// 	for i := 5; i <= 41; i++ {
+	// 		randomValue := rand.Intn(5) + 6 // Generate a random value between 70 and 90
+	// 		f.SetCellValue("管理岗汇总", fmt.Sprintf("%v%v", col, i), fmt.Sprintf("%v", randomValue))
+	// 	}
+	// }
+	countPotentialLow := 10
+	for i := 5; i <= 254; i++ {
+		tmpTotalGrade := 0
+		for _, col := range columns {
+			if col != "T" && col != "U" && col != "V" {
+				base := 6
+				if i >= 141 && i <= 145 {
+					base = 7
+				}
+
+				randomValue := rand.Intn(4) + base // Generate a random value between 5 and 10
+				tmpTotalGrade += randomValue
+				f.SetCellValue("非管理岗汇总", fmt.Sprintf("%v%v", col, i), fmt.Sprintf("%v", randomValue))
+			}
+
+			if col == "T" {
+				f.SetCellValue("非管理岗汇总", fmt.Sprintf("%v%v", col, i), fmt.Sprintf("%v", tmpTotalGrade))
+			}
+
+			if col == "U" {
+				tmpAbility := "低"
+				if tmpTotalGrade >= 70 && tmpTotalGrade <= 89 {
+					tmpAbility = "中"
+				}
+
+				if tmpTotalGrade >= 90 && tmpTotalGrade <= 100 {
+					tmpAbility = "高"
+				}
+				f.SetCellValue("非管理岗汇总", fmt.Sprintf("%v%v", col, i), tmpAbility)
+			}
+
+			if col == "V" {
+				abilities := []string{"中", "高"}
+				if !(i >= 141 && i <= 145) && countPotentialLow <= 10 {
+					abilities = []string{"低", "中", "高"}
+				}
+                randomAbility := abilities[rand.Intn(len(abilities))]
+				if randomAbility == "低" {
+					countPotentialLow++
+				}
+				f.SetCellValue("非管理岗汇总", fmt.Sprintf("%v%v", col, i), randomAbility)
+			}
+
+		}
+
+	}
+
+	// 建立资料夹
+	folderPath := fmt.Sprintf("./export/一般员工人才胜任力盘点2025")
+	filePath := fmt.Sprintf("./export/一般员工人才胜任力盘点2025/一般员工人才胜任力盘点2025.xlsx")
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist

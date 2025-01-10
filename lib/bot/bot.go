@@ -135,3 +135,12 @@ func (l *Bot) ProduceWhatEverKpi(templatePath string) error {
 	}
 	return nil
 }
+
+
+func (l *Bot) ProduceWhatEverNormalKpi(templatePath string) error {
+	err := excel.MakeWhatEverExcelNormal(templatePath)
+	if err != nil {
+		return fmt.Errorf("make whatever excel fail: %v", err)
+	}
+	return nil
+}

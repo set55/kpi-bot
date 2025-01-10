@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"log"
 )
 
 
@@ -207,4 +208,22 @@ func GetBugStandard(bugRate float64) float64 {
 	} else {
 		return 0
 	}
+}
+
+func CalculateDelayDays(realEnd, end string) int {
+	layout := "2006-01-02"
+	realEndDate, err := time.Parse(layout, realEnd)
+	if err != nil {
+		log.Fatalf("Error parsing realEnd date: %v\n", err)
+	}
+	endDate, err := time.Parse(layout, end)
+	if err != nil {
+		log.Fatalf("Error parsing end date: %v\n", err)
+	}
+
+	delayDays := int(realEndDate.Sub(endDate).Hours() / 24)
+	if delayDays < 0 {
+		return 0
+	}
+	return delayDays
 }
