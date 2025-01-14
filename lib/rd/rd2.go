@@ -81,7 +81,7 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 	// 项目进度完成情况
 	for _, project := range projects {
 		delayDays += common.CalculateDelayDays(*project.RealEnd, *project.End)
-		result.ProjectDetail += fmt.Sprintf("id: %d 项目名称: %s, 实际结束时间: %s, 计划结束时间: %s, 延时天数: %d\n\n", project.Root, project.Name, *project.RealEnd, *project.End, common.CalculateDelayDays(*project.RealEnd, *project.End))
+		result.ProjectDetail += fmt.Sprintf("id: %d 项目名称: %s, 实际完成时间: %s, 计划完成时间: %s, 延时天数: %d\n\n", project.Root, project.Name, *project.RealEnd, *project.End, common.CalculateDelayDays(*project.RealEnd, *project.End))
 	}
 	// 项目进度分数
 	result.ProjectGrade = float64(PROJECT_PROGRESS_STANDARD2 - delayDays*DELAY_DAYS_SCORE)
