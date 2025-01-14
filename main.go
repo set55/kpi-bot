@@ -117,7 +117,7 @@ func main() {
 
 	for _, v := range rds {
 		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime)
-		err := tmp.MakeRdReport("./excel/kpi-rd.xlsx")
+		err := tmp.MakeRdReport("./excel/kpi-rd2.xlsx")
 		if err != nil {
 			log.Fatalf("error MakeRdReport: %v", err)
 		}

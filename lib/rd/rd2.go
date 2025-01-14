@@ -188,11 +188,11 @@ func (l *RdKpi2) MakeRdReport(path string) error {
 	// H6. bug遗留率 最终得分
 	f.SetCellValue("Sheet1", "H6", data.BugGrade)
 
-	// H11. 总分数
-	f.SetCellValue("Sheet1", "H11", data.TotalGrade)
+	// H9. 总分数
+	f.SetCellValue("Sheet1", "H9", data.TotalGrade)
 
-	// G13. 绩效基数
-	f.SetCellValue("Sheet1", "G13", data.Coefficient)
+	// G11. 绩效基数
+	f.SetCellValue("Sheet1", "G11", data.Coefficient)
 
 	// G14. 最终得分系数
 
