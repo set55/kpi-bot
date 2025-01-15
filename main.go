@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	// dbQuery "kpi-bot/db"
 
-	// "kpi-bot/lib/bot"
+	"kpi-bot/lib/bot"
 	"fmt"
 	"log"
 
@@ -38,15 +38,13 @@ func main() {
 	// all team members
 
 	// 研发
-	// rds := []string{"set.su", "paul.gao", "samy.gou", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
-	// rdProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee", "jiangjiahui", "caojianni"}
-	// rds := []string{"champion.fu"}
+	rds := []string{"alan.tin", "jihuaqing", "liuhongtao"}
+	rdProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee", "jiangjiahui", "caojianni"}
 	
 	
 	// 软件服务中心 研发
-	// rdsWithoutTest := []string{"shiwen.tin", "xiechen", "zouyanling", "ruanbanyong", "zhouyao", "liuxiaoyan", "wangtuhe", "chenyuanchong", "qihongquan", "zhangzhilun", "zhuangjianyong", "wangxianming"}
-	// rdsWithoutTestProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee", "caojianni"}
-	// rdsWithoutTest := []string{"liuxiaoyan"}
+	rdsWithoutTest := []string{"shiwen.tin", "wangtuhe", "chenyuanchong", "qihongquan", "zhangzhilun", "zhuangjianyong", "wangxianming"}
+	rdsWithoutTestProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee", "caojianni"}
 
 	// 阿崔部门 研发
 	// rdsWithoutTest := []string{"zengyi", "chenbo", "lixiaolong", "tangjilin", "jiaoxiangjie", "bieji", "suiguanyou", "lishuaipeng"}
@@ -56,8 +54,8 @@ func main() {
 	// tests := []string{"wangshaoyu"}
 
 	// 项目经理
-	// pms := []string{"qixiaofeng", "jiangjiahui", "caojianni"}
-	// pmsWithoutTest := []string{"guoqiao.chen", "shawn.wang","simon.chen"}
+	pms := []string{"qixiaofeng", "jiangjiahui", "caojianni"}
+	pmsWithoutTest := []string{"guoqiao.chen", "shawn.wang","simon.chen"}
 	// pmsWithoutTest := []string{"guoqiao.chen"}
 
 	// 运维
@@ -68,26 +66,26 @@ func main() {
 
 
 
-	// robot := bot.NewBot(db)
-	// err = robot.ProduceRdKpi("./excel/kpi-rd.xlsx", beginDatetime, endDatetime, rds, rdProjectPms)
-	// if err != nil {
-	// 	log.Fatalf("Error produceRdKpi: %v", err)
-	// }
+	robot := bot.NewBot(db)
+	err = robot.ProduceRdKpi("./excel/kpi-rd.xlsx", beginDatetime, endDatetime, rds, rdProjectPms)
+	if err != nil {
+		log.Fatalf("Error produceRdKpi: %v", err)
+	}
 
-	// err = robot.ProduceRdKpiWithoutTestReport("./excel/kpi-rd-without.xlsx", beginDatetime, endDatetime, rdsWithoutTest, rdsWithoutTestProjectPms)
-	// if err != nil {
-	// 	log.Fatalf("error produceRdKpiWithoutTestreport: %v", err)
-	// }
+	err = robot.ProduceRdKpiWithoutTestReport("./excel/kpi-rd-without.xlsx", beginDatetime, endDatetime, rdsWithoutTest, rdsWithoutTestProjectPms)
+	if err != nil {
+		log.Fatalf("error produceRdKpiWithoutTestreport: %v", err)
+	}
 
-	// err = robot.ProducePmKpi("./excel/kpi-pm.xlsx", beginDatetime, endDatetime, pms)
-	// if err != nil {
-	// 	log.Fatalf("error ProducePmKpi: %v", err)
-	// }
+	err = robot.ProducePmKpi("./excel/kpi-pm.xlsx", beginDatetime, endDatetime, pms)
+	if err != nil {
+		log.Fatalf("error ProducePmKpi: %v", err)
+	}
 
-	// err = robot.ProducePmKpiWithoutTestReport("./excel/kpi-pm.xlsx", beginDatetime, endDatetime, pmsWithoutTest)
-	// if err != nil {
-	// 	log.Fatalf("error ProducePmKpiWithoutTestReport: %v", err)
-	// }
+	err = robot.ProducePmKpiWithoutTestReport("./excel/kpi-pm.xlsx", beginDatetime, endDatetime, pmsWithoutTest)
+	if err != nil {
+		log.Fatalf("error ProducePmKpiWithoutTestReport: %v", err)
+	}
 
 	// storyPms := []string{"qixiaofeng", "guoqiao.chen", "shawn.wang", "simon.chen", "huangweiqi"}
 	// err = robot.ProduceTestKpi("./excel/kpi-test.xlsx", beginDatetime, endDatetime, tests, storyPms)
@@ -115,7 +113,16 @@ func main() {
 	// 	log.Fatalf("error ProduceWhatEverNormalKpi: %v", err)
 	// }
 
-	rds2 := []string{"set.su", "paul.gao", "samy.gou", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
+	rds2 := []string{
+		"set.su", 
+		"paul.gao", 
+		"samy.gou", 
+		"deakin.han", 
+		"xiechen", 
+		"zouyanling", 
+		"ruanbanyong", 
+		"zhouyao",
+		"liuxiaoyan"}
 	for _, v := range rds2 {
 		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime)
 		err := tmp.MakeRdReport("./excel/kpi-rd2-2.xlsx")
@@ -124,7 +131,11 @@ func main() {
 		}
 	}
 
-	test2 := []string{"linyanhai", "wangshaoyu", "pengzijie"}
+	test2 := []string{
+		"linyanhai",
+		"wangshaoyu",
+		"pengzijie",
+	}
 	for _, v := range test2 {
 		tmp := test.NewTestKpi2(db, v, beginDatetime, endDatetime)
 		err := tmp.MakeTestReport("./excel/kpi-test2.xlsx")
