@@ -26,7 +26,7 @@ const (
 
 	// bug遗留率 分值
 	BUG_CARRY_OVER_STANDARD2 = 30
-	BUG_ONE_SCORE            = 1
+	BUG_ONE_SCORE            = 2
 
 	// 系数
 	TOP_COEFFICIENT2    = 1.2
@@ -115,7 +115,7 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 			End:       project.End,
 			DelayDays: ddays,
 		})
-		result.ProjectDetail += fmt.Sprintf("项目名称: %s 延时天数: %d\n\n",project.Name, ddays)
+		// result.ProjectDetail += fmt.Sprintf("项目名称: %s 延时天数: %d\n\n",project.Name, ddays)
 	}
 	// 项目进度分数
 	result.ProjectGrade = float64(PROJECT_PROGRESS_STANDARD2 - delayDays*DELAY_DAYS_SCORE)
@@ -252,6 +252,8 @@ func (l *RdKpi2) MakeRdReport(path string) error {
 	
 	// Shee2 A1 Project
 	f.NewSheet("Sheet2")
+	f.SetColWidth("Sheet2", "A", "E", 20)
+	f.SetColWidth("Sheet2", "B", "B", 100)
 	f.SetCellValue("Sheet2", "A1", "项目")
 	rowNum := 2
 	f.SetCellValue("Sheet2", "A2", "项目id")

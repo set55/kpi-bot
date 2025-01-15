@@ -15,7 +15,7 @@ import (
 const (
 	// 测试软件项目进度达成率 分值
 	TEST_PROGRESS_STANDARD2 = 40
-	DELAY_DAYS_SCORE = 4
+	DELAY_DAYS_SCORE        = 4
 
 	// 测试软件项目有效bug率
 	VALIDATE_BUG_RATE_STANDARD2 = 40
@@ -41,25 +41,53 @@ type (
 	}
 
 	TestKpiResult struct {
-		ReportDetail string
-		ReportGrade  float64
-		BugDetail    string
-		BugGrade     float64
+		ReportDetail  string
+		ReportGrade   float64
+		TestReportDatas []TestReportData
+		BugDetail     string
+		BugGrade      float64
+		TestBugDatas  []TestBugData
 		ToStoryDetail string
 		ToStoryGrade  float64
+		ToStoryBugs   []ToStoryBugData
 		TotalGrade    float64
 		StartTime     string
 		EndTime       string
-		AccountName string
-		Coefficient float64
+		AccountName   string
+		Coefficient   float64
 	}
 
+	TestReportData struct {
+		TaskId          int
+		ReportId        int
+		TaskName        string
+		TaskEnd         string
+		ReportCreatedAt string
+		DelayDays       int
+	}
+
+
+	TestBugData struct {
+		BugId         int
+		BugTitle      string
+		BugCreator    string
+		BugStatus     string
+		BugResolution string
+	}
+
+	ToStoryBugData struct {
+		BugId         int
+		BugTitle      string
+		BugCreator    string
+		BugStatus     string
+		BugResolution string
+	}
 )
 
 // NewTestKpi 创建一个测试KPI对象
 func NewTestKpi2(db *sql.DB, account, startTime, endTime string) *TestKpi2 {
 	return &TestKpi2{
-		Account:  account,
+		Account:   account,
 		Db:        db,
 		StartTime: startTime,
 		EndTime:   endTime,
@@ -71,7 +99,7 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 	result.AccountName = common.AccountToName(l.Account)
 	result.StartTime = l.StartTime
 	result.EndTime = l.EndTime
-	
+
 	// 获取测试报告
 	testreports := dbQuery.QueryTestReport(l.Db, l.Account, l.StartTime, l.EndTime)
 	delaydays := 0
@@ -79,12 +107,19 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 	for _, testreport := range testreports {
 		singledelaydays := common.CalculateDelayDays2(testreport.ReportCreatedAt, testreport.TaskEnd)
 		delaydays += singledelaydays
-		result.ReportDetail += fmt.Sprintf("測試單id: %d, 測試報告id: %d, 測試單名称: %s, 測試單结束时间: %s, 测试报告创建时间: %s, 延遲天數: %d\n\n",
-		 testreport.TaskId, testreport.ReportId, testreport.TaskName, testreport.TaskEnd, testreport.ReportCreatedAt, singledelaydays)
+		result.TestReportDatas = append(result.TestReportDatas, TestReportData{
+			TaskId:          testreport.TaskId,
+			ReportId:        testreport.ReportId,
+			TaskName:        testreport.TaskName,
+			TaskEnd:         testreport.TaskEnd,
+			ReportCreatedAt: testreport.ReportCreatedAt,
+			DelayDays:       singledelaydays,
+		})
+		// result.ReportDetail += fmt.Sprintf("測試單名称: %s, 延迟天数: %d\n\n", testreport.TaskName, singledelaydays)
 	}
 
-	// 
-	result.ReportGrade = float64(TEST_PROGRESS_STANDARD2 - delaydays * DELAY_DAYS_SCORE)
+	result.ReportDetail = fmt.Sprintf("測試報告數量: %d, 总延迟天数: %d\n\n", len(testreports), delaydays) + result.ReportDetail
+	result.ReportGrade = float64(TEST_PROGRESS_STANDARD2 - delaydays*DELAY_DAYS_SCORE)
 	if result.ReportGrade < 0 {
 		result.ReportGrade = 0
 	}
@@ -92,15 +127,18 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 	// 获取有效bug率
 	bugs := dbQuery.TestBugs(l.Db, l.Account, l.StartTime, l.EndTime)
 	validateBugs := 0
-	toStoryBugs := 0
 	for _, bug := range bugs {
 		if l.IsValidateBug(bug) {
 			validateBugs++
 		}
-		if bug.BugResolution == "tostory" {
-			toStoryBugs++
-		}
-		result.BugDetail += fmt.Sprintf("bug id: %d, bug标题: %s, bug创建人: %s, bug状态: %s, bug解决方案: %s\n\n", bug.BugId, bug.BugTitle, bug.BugCreator, bug.BugStatus, bug.BugResolution)
+		result.TestBugDatas = append(result.TestBugDatas, TestBugData{
+			BugId:         bug.BugId,
+			BugTitle:      bug.BugTitle,
+			BugCreator:    bug.BugCreator,
+			BugStatus:     bug.BugStatus,
+			BugResolution: bug.BugResolution,
+		})
+		// result.BugDetail += fmt.Sprintf("bug id: %d, bug标题: %s, bug创建人: %s, bug状态: %s, bug解决方案: %s\n\n", bug.BugId, bug.BugTitle, bug.BugCreator, bug.BugStatus, bug.BugResolution)
 	}
 
 	// 有效bug率
@@ -109,6 +147,18 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 	result.BugDetail = fmt.Sprintf("有效bug数: %d, 总bug数: %d, 有效bug率: %.2f\n\n", validateBugs, len(bugs), bugRate) + result.BugDetail
 
 	// bug转需求数
+	toStoryBugs := 0
+	storybugs := dbQuery.StoryBugs(l.Db, l.Account, l.StartTime, l.EndTime)
+	for _, bug := range storybugs {
+		toStoryBugs++
+		result.ToStoryBugs = append(result.ToStoryBugs, ToStoryBugData{
+			BugId:         bug.BugId,
+			BugTitle:      bug.BugTitle,
+			BugCreator:    bug.BugCreator,
+			BugStatus:     bug.BugStatus,
+			BugResolution: bug.BugResolution,
+		})
+	}
 	result.ToStoryDetail = fmt.Sprintf("bug转需求数: %d\n\n", toStoryBugs)
 	result.ToStoryGrade = float64(toStoryBugs) * BUG_ONE_GRADE2
 
@@ -131,10 +181,7 @@ func (l *TestKpi2) GetKpiGradeStandard(totalGrade float64) float64 {
 }
 
 func (l *TestKpi2) IsValidateBug(bug dbQuery.TestBug) bool {
-	if slices.Contains([]string{"", "fixed", "postponed", "tostory", "willnotfix"}, bug.BugResolution) {
-		return true
-	}
-	return false
+	return slices.Contains([]string{"", "fixed", "postponed", "tostory", "willnotfix"}, bug.BugResolution)
 }
 
 func (l *TestKpi2) ConverBugRateToBaseNumber(bugRate float64) float64 {
@@ -182,7 +229,7 @@ func (l *TestKpi2) MakeTestReport(path string) error {
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
 	// G4. 项目进度延时率 完成情况
-	
+
 	f.SetCellValue("Sheet1", "G4", data.ReportDetail)
 
 	// H4. 项目进度延时率 最终得分
@@ -206,9 +253,62 @@ func (l *TestKpi2) MakeTestReport(path string) error {
 	// G11. 绩效基数
 	f.SetCellValue("Sheet1", "G11", data.Coefficient)
 
-	// G14. 最终得分系数
+	// Shee2 A1 TestReport
+	f.NewSheet("Sheet2")
+	f.SetColWidth("Sheet2", "A", "F", 20)
+	f.SetColWidth("Sheet2", "B", "C", 60)
+	f.SetCellValue("Sheet2", "A1", "测试单")
+	rowNum := 2
+	f.SetCellValue("Sheet2", "A2", "测试单id")
+	f.SetCellValue("Sheet2", "B2", "测试报告id")
+	f.SetCellValue("Sheet2", "C2", "测试单名称")
+	f.SetCellValue("Sheet2", "D2", "测试单计划结束时间")
+	f.SetCellValue("Sheet2", "E2", "测试报告生成时间")
+	f.SetCellValue("Sheet2", "F2", "延迟天数")
 
-	// G17. 当月绩效奖金
+	for _, testreport := range data.TestReportDatas {
+		rowNum++
+		f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), testreport.TaskId)
+		f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), testreport.ReportId)
+		f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), testreport.TaskName)
+		f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), testreport.TaskEnd)
+		f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), testreport.ReportCreatedAt)
+		f.SetCellValue("Sheet2", fmt.Sprintf("F%v", rowNum), testreport.DelayDays)
+	}
+
+	rowNum++
+	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "Bug")
+	rowNum++
+	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "bug id")
+	f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), "bug 标题")
+	f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), "bug 创建人")
+	f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), "bug 状态")
+	f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), "bug 解决方案")
+	for _, bug := range data.TestBugDatas {
+		rowNum++
+		f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), bug.BugId)
+		f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), bug.BugTitle)
+		f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), bug.BugCreator)
+		f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), bug.BugStatus)
+		f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), bug.BugResolution)
+	}
+
+	rowNum++
+	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "bug转需求")
+	rowNum++
+	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "bug id")
+	f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), "bug 标题")
+	f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), "bug 创建人")
+	f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), "bug 状态")
+	f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), "bug 解决方案")
+	for _, bug := range data.ToStoryBugs {
+		rowNum++
+		f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), bug.BugId)
+		f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), bug.BugTitle)
+		f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), bug.BugCreator)
+		f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), bug.BugStatus)
+		f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), bug.BugResolution)
+	}
 
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))

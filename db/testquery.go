@@ -97,4 +97,37 @@ func TestBugs(db *sql.DB, account, startTime, endTime string) []TestBug {
 	return result
 }
 
+func StoryBugs(db *sql.DB, account, startTime, endTime string) []TestBug {
+	result := []TestBug{}
+	sqlCmd := fmt.Sprintf(`
+		select
+		zt_bug.id as bugId,
+		zt_bug.title as bugTitle,
+		zt_bug.openedBy as bugCreator,
+		zt_bug.status as bugStatus,
+		zt_bug.resolution as bugResolution
+		from zt_bug
+		where zt_bug.openedBy='%s'
+		and zt_bug.resolution='tostory'
+		and zt_bug.resolvedDate >= '%s'
+		and zt_bug.resolvedDate <= '%s';
+	`, account, startTime, endTime)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var res TestBug
+		err := rows.Scan(&res.BugId, &res.BugTitle, &res.BugCreator, &res.BugStatus, &res.BugResolution)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+		result = append(result, res)
+	}
+	return result
+}
+
 
