@@ -1142,6 +1142,54 @@ func QueryProjectCompleteRate(db *sql.DB, accounts []string, startTime, endTime 
 	results := map[string]QueryProjectCompleteRateResult{}
 	sqlCmd := fmt.Sprintf(`
 		select account,AVG(devleoped_num/project_storys) as complete_rate,
+		case when AVG(devleoped_num/project_storys) >= 1 then 1.0
+			when AVG(devleoped_num/project_storys) >= 0.85 and AVG(devleoped_num/project_storys) < 1 then 0.8
+			when AVG(devleoped_num/project_storys) >= 0.75 and AVG(devleoped_num/project_storys) < 0.85 then 0.6
+			when AVG(devleoped_num/project_storys) >= 0.65 and AVG(devleoped_num/project_storys) < 0.75 then 0.4
+			else 0 end as complete_rate_standard
+		from ( 
+			select a.account,b.id,b.name,count(1) as devleoped_num,
+			(select count(1) from zt_projectstory ztp 
+				inner join zt_story zts on zts.id=ztp.story and zts.deleted="0" 
+				where project = b.id) as project_storys 
+			from zt_user a 
+			inner join zt_project b on b.PM = a.account and b.deleted="0" and b.realEnd between "%s" and "%s" and b.project = 0 
+			inner join zt_projectstory d on d.project = b.id
+			inner join zt_story c on c.id= d.story and c.deleted = "0" and c.stage not in ("waiting","planned","projected","developing") 
+			where a.account in (%s) 
+			group by a.account,b.id 
+		) tmp group by account
+	`, startTime, endTime, common.AccountArrayToString(accounts))
+	fmt.Println(sqlCmd)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var result QueryProjectCompleteRateResult
+		err = rows.Scan(
+			&result.Account,
+			&result.CompleteRate,
+			&result.CompleteRateStandard,
+		)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+
+		fmt.Printf("Account: %s, CompleteRate: %f, CompleteRateStandard: %f\n", result.Account, result.CompleteRate, result.CompleteRateStandard)
+
+		results[result.Account] = result
+	}
+	return results
+}
+
+// 项目成果完成率,不需要关注执行，只需要看项目需求完成度，因为有执行一定有项目
+func QueryProjectCompleteRateWithout(db *sql.DB, accounts []string, startTime, endTime string) map[string]QueryProjectCompleteRateResult {
+	results := map[string]QueryProjectCompleteRateResult{}
+	sqlCmd := fmt.Sprintf(`
+		select account,AVG(devleoped_num/project_storys) as complete_rate,
 		case when AVG(devleoped_num/project_storys) >= 0.95 then 1.0
 			when AVG(devleoped_num/project_storys) >= 0.9 and AVG(devleoped_num/project_storys) < 0.95 then 1.0
 			when AVG(devleoped_num/project_storys) >= 0.8 and AVG(devleoped_num/project_storys) < 0.9 then 0.8

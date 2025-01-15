@@ -16,7 +16,7 @@ const (
 	PROJECT_COMPLETEMENT_STANDARD_WITHOUT_TESTREPORT = 20
 
 	// 项目规划需求数 分值
-	PROJECT_STORY_NUM_STANDARD_WITHOUT_TESTREPORT = 10
+	PROJECT_STORY_NUM_STANDARD_WITHOUT_TESTREPORT = 20
 	PROJECTED_STORY_STANDARD_WITHOUT_TESTREPORT = 0.5
 	DEVELOPED_STORY_STANDARD_WITHOUT_TESTREPORT = 1
 	CLOSED_STORY_STANDARD_WITHOUT_TESTREPORT = 1
@@ -179,7 +179,7 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 			tmp.SumRealProjectDiff = result.SumRealProjectDiff - tmp.RealTotalSaturdays - tmp.RealTotalSundays
 			tmp.DiffRate = common.GetProjectProgressExpectRate(tmp.SumProjectDiff, tmp.SumRealProjectDiff)
 			tmp.ProgressStandard = GetPmProjectWithoutTestProgressStandard(tmp.DiffRate)
-			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD
+			tmp.ProgressStandardGrade = tmp.ProgressStandard * PROJECT_PROGRESS_STANDARD_WITHOUT_TESTREPORT
 			tmp.TotalGrade += tmp.ProgressStandardGrade
 			kpiGrades[account] = tmp
 		}
@@ -187,13 +187,13 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 
 	// 项目成果完成率
 	fmt.Print("项目成果完成率\n")
-	completeRateResult := dbQuery.QueryProjectCompleteRate(l.Db, l.Accounts, l.StartTime, l.EndTime)
+	completeRateResult := dbQuery.QueryProjectCompleteRateWithout(l.Db, l.Accounts, l.StartTime, l.EndTime)
 	for account, result := range completeRateResult {
 		if _, ok := kpiGrades[account]; ok {
 			tmp := kpiGrades[account]
 			tmp.CompleteRate = result.CompleteRate
 			tmp.CompleteRateStandard = result.CompleteRateStandard
-			tmp.CompleteRateStandardGrade = result.CompleteRateStandard * PROJECT_COMPLETEMENT_STANDARD
+			tmp.CompleteRateStandardGrade = result.CompleteRateStandard * PROJECT_COMPLETEMENT_STANDARD_WITHOUT_TESTREPORT
 			tmp.TotalGrade += tmp.CompleteRateStandardGrade
 			kpiGrades[account] = tmp
 		}
@@ -225,13 +225,13 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 				switch r.Stage {
 				case "projected":
 					tmp.ProjectedStoryNum = r.StoryNum
-					tmp.StoryNumGrade += float64(tmp.ProjectedStoryNum) * PROJECTED_STORY_STANDARD
+					tmp.StoryNumGrade += float64(tmp.ProjectedStoryNum) * PROJECTED_STORY_STANDARD_WITHOUT_TESTREPORT
 				case "developed":
 					tmp.DevelopedStoryNum = r.StoryNum
-					tmp.StoryNumGrade += float64(tmp.DevelopedStoryNum) * DEVELOPED_STORY_STANDARD
+					tmp.StoryNumGrade += float64(tmp.DevelopedStoryNum) * DEVELOPED_STORY_STANDARD_WITHOUT_TESTREPORT
 				case "closed":
 					tmp.ClosedStoryNum = r.StoryNum
-					tmp.StoryNumGrade += float64(tmp.ClosedStoryNum) * CLOSED_STORY_STANDARD
+					tmp.StoryNumGrade += float64(tmp.ClosedStoryNum) * CLOSED_STORY_STANDARD_WITHOUT_TESTREPORT
 				}
 			}
 

@@ -312,16 +312,10 @@ func MakePmExcel(path string, data pm.PmKpiGrade) error {
 	f.SetCellValue("Sheet1", "H7", data.TimeEstimateGrade)
 
 	// H10. 总分数
-	f.SetCellValue("Sheet1", "H10", data.TotalGrade)
+	f.SetCellValue("Sheet1", "H11", data.TotalGrade)
 
 	// G12. 绩效基数
-	f.SetCellValue("Sheet1", "G12", data.TotalGradeStandard)
-
-	// G13. 最终得分系数
 	f.SetCellValue("Sheet1", "G13", data.TotalGradeStandard)
-
-	// G16. 当月绩效奖金
-	f.SetCellValue("Sheet1", "G16", data.TotalGradeStandard*common.GetRewardByAccount(data.Account))
 
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
@@ -429,11 +423,7 @@ func MakePmExcelWithoutTestReport(path string, data pm.PmKpiGradeWithoutTestRepo
 	// G12. 绩效基数
 	f.SetCellValue("Sheet1", "G12", data.TotalGradeStandard)
 
-	// G13. 最终得分系数
-	f.SetCellValue("Sheet1", "G13", data.TotalGradeStandard)
-
-	// G16. 当月绩效奖金
-	f.SetCellValue("Sheet1", "G16", data.TotalGradeStandard*common.GetRewardByAccount(data.Account))
+	
 
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))

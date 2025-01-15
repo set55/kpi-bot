@@ -54,8 +54,8 @@ func main() {
 	// tests := []string{"wangshaoyu"}
 
 	// 项目经理
-	pms := []string{"qixiaofeng", "jiangjiahui", "caojianni"}
-	pmsWithoutTest := []string{"guoqiao.chen", "shawn.wang","simon.chen"}
+	pms := []string{"qixiaofeng", "jiangjiahui", "caojianni", "shawn.wang","simon.chen"}
+	pmsWithoutTest := []string{"guoqiao.chen"}
 	// pmsWithoutTest := []string{"guoqiao.chen"}
 
 	// 运维
@@ -77,7 +77,7 @@ func main() {
 		log.Fatalf("error produceRdKpiWithoutTestreport: %v", err)
 	}
 
-	err = robot.ProducePmKpi("./excel/kpi-pm.xlsx", beginDatetime, endDatetime, pms)
+	err = robot.ProducePmKpi("./excel/pmnew.xlsx", beginDatetime, endDatetime, pms)
 	if err != nil {
 		log.Fatalf("error ProducePmKpi: %v", err)
 	}
