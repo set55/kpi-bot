@@ -77,7 +77,7 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 	delaydays := 0
 
 	for _, testreport := range testreports {
-		singledelaydays := common.CalculateDelayDays(testreport.ReportCreatedAt, testreport.TaskEnd)
+		singledelaydays := common.CalculateDelayDays2(testreport.ReportCreatedAt, testreport.TaskEnd)
 		delaydays += singledelaydays
 		result.ReportDetail += fmt.Sprintf("測試單id: %d, 測試報告id: %d, 測試單名称: %s, 測試單结束时间: %s, 测试报告创建时间: %s, 延遲天數: %d\n\n",
 		 testreport.TaskId, testreport.ReportId, testreport.TaskName, testreport.TaskEnd, testreport.ReportCreatedAt, singledelaydays)

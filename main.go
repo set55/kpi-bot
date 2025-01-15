@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/go-sql-driver/mysql"
 	"kpi-bot/lib/rd"
+	"kpi-bot/lib/test"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
@@ -36,7 +38,7 @@ func main() {
 	// all team members
 
 	// 研发
-	rds := []string{"set.su", "paul.gao", "samy.gou", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
+	// rds := []string{"set.su", "paul.gao", "samy.gou", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
 	// rdProjectPms := []string{"guoqiao.chen", "shawn.wang","simon.chen", "qixiaofeng", "set.su", "justin.lee", "jiangjiahui", "caojianni"}
 	// rds := []string{"champion.fu"}
 	
@@ -61,8 +63,8 @@ func main() {
 	// 运维
 	// deveops := []string{"justin.lee"}
 
-	beginDatetime := "2024-12-01 00:00:00"
-	endDatetime := "2024-12-31 23:59:59"
+	beginDatetime := "2025-01-01 00:00:00"
+	endDatetime := "2025-01-31 23:59:59"
 
 
 
@@ -113,14 +115,22 @@ func main() {
 	// 	log.Fatalf("error ProduceWhatEverNormalKpi: %v", err)
 	// }
 
-
-
-	for _, v := range rds {
+	rds2 := []string{"set.su", "paul.gao", "samy.gou", "alan.tin", "jihuaqing", "liuhongtao", "deakin.han"}
+	for _, v := range rds2 {
 		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime)
-		err := tmp.MakeRdReport("./excel/kpi-rd2.xlsx")
+		err := tmp.MakeRdReport("./excel/kpi-rd2-2.xlsx")
 		if err != nil {
 			log.Fatalf("error MakeRdReport: %v", err)
 		}
-
 	}
+
+	test2 := []string{"linyanhai", "wangshaoyu", "pengzijie"}
+	for _, v := range test2 {
+		tmp := test.NewTestKpi2(db, v, beginDatetime, endDatetime)
+		err := tmp.MakeTestReport("./excel/kpi-test2.xlsx")
+		if err != nil {
+			log.Fatalf("error MakeTestReport: %v", err)
+		}
+	}
+
 }

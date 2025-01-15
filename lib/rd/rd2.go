@@ -47,17 +47,43 @@ type (
 	RdKpiResult2 struct {
 		ProjectDetail string
 		ProjectGrade  float64
+		ProjectDatas  []ProjectData
 		StoryDetail   string
 		StoryGrade    float64
+		StoryDatas    []StoryData
 		BugDetail     string
 		BugGrade      float64
+		BugDatas      []BugData
 		TimeDetail    string
 		TimeGrade     float64
 		TotalGrade    float64
 		StartTime     string
 		EndTime       string
-		AccountName string
-		Coefficient float64
+		AccountName   string
+		Coefficient   float64
+	}
+
+	ProjectData struct {
+		Root      int
+		Name      string
+		RealEnd   *string
+		End       *string
+		DelayDays int
+	}
+
+	StoryData struct {
+		StoryId       int
+		StoryTitle    string
+		StoryEstimate float64
+		TaskConsumed  float64
+		StoryBase     float64
+	}
+
+	BugData struct {
+		BugId         int
+		BugTitle      string
+		BugStatus     string
+		BugResolution string
 	}
 )
 
@@ -80,14 +106,23 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 	delayDays := 0
 	// 项目进度完成情况
 	for _, project := range projects {
-		delayDays += common.CalculateDelayDays(*project.RealEnd, *project.End)
-		result.ProjectDetail += fmt.Sprintf("id: %d 项目名称: %s, 实际完成时间: %s, 计划完成时间: %s, 延时天数: %d\n\n", project.Root, project.Name, *project.RealEnd, *project.End, common.CalculateDelayDays(*project.RealEnd, *project.End))
+		ddays := common.CalculateDelayDays(*project.RealEnd, *project.End)
+		delayDays += ddays
+		result.ProjectDatas = append(result.ProjectDatas, ProjectData{
+			Root:      project.Root,
+			Name:      project.Name,
+			RealEnd:   project.RealEnd,
+			End:       project.End,
+			DelayDays: ddays,
+		})
+		result.ProjectDetail += fmt.Sprintf("项目名称: %s 延时天数: %d\n\n",project.Name, ddays)
 	}
 	// 项目进度分数
 	result.ProjectGrade = float64(PROJECT_PROGRESS_STANDARD2 - delayDays*DELAY_DAYS_SCORE)
 	if result.ProjectGrade < 0 {
 		result.ProjectGrade = 0
 	}
+	result.ProjectDetail = fmt.Sprintf("總延時天數: %d\n\n", delayDays) + result.ProjectDetail
 
 	// 需求完成情况
 	tasks := dbQuery.QueryRdTasks(l.Db, l.Account, l.StartTime, l.EndTime)
@@ -114,21 +149,41 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 			storyMap[task.StoryId] = story
 		}
 	}
-
+	totalStoryHours := 0.0 // 预估工时
+	totalTaskHours := 0.0 // 实际工时
+	totalStoryCount := 0
 	for _, story := range storyMap {
 		// 需求基础分
 		storyBase := GetStoryBase2(story.StoryEstimate, story.TaskConsumed)
-		result.StoryDetail += fmt.Sprintf("需求id: %d, 需求名称: %s, 预估工时: %f, 实际工时: %f, 需求基础分: %f\n\n", story.StoryId, story.StoryTitle, story.StoryEstimate, story.TaskConsumed, storyBase)
+		result.StoryDatas = append(result.StoryDatas, StoryData{
+			StoryId:       story.StoryId,
+			StoryTitle:    story.StoryTitle,
+			StoryEstimate: story.StoryEstimate,
+			TaskConsumed:  story.TaskConsumed,
+			StoryBase:     storyBase,
+		})
+		// result.StoryDetail += fmt.Sprintf("需求id: %d, 需求名称: %s, 预估工时: %f, 实际工时: %f, 需求基础分: %f\n\n", story.StoryId, story.StoryTitle, story.StoryEstimate, story.TaskConsumed, storyBase)
 		result.StoryGrade += storyBase
+		totalStoryHours += story.StoryEstimate
+		totalTaskHours += story.TaskConsumed
+		totalStoryCount++
 	}
+	result.StoryDetail = fmt.Sprintf("总需求数: %d\n\n总预估工时: %.2f\n\n总实际工时: %.2f\n\n", totalStoryCount, totalStoryHours, totalTaskHours)
 
 	// bug遗留率
 	bugs := dbQuery.RdBugs(l.Db, l.Account)
 	deleteBugScore := 0.0
 	for _, bug := range bugs {
-		result.BugDetail += fmt.Sprintf("bug id: %d, bug标题: %s, bug状态: %s, bug解决情况: %s\n\n", bug.BugId, bug.BugTitle, bug.BugStatus, bug.BugResolution)
+		// result.BugDetail += fmt.Sprintf("bug id: %d, bug标题: %s, bug状态: %s, bug解决情况: %s\n\n", bug.BugId, bug.BugTitle, bug.BugStatus, bug.BugResolution)
+		result.BugDatas = append(result.BugDatas, BugData{
+			BugId:         bug.BugId,
+			BugTitle:      bug.BugTitle,
+			BugStatus:     bug.BugStatus,
+			BugResolution: bug.BugResolution,
+		})
 		deleteBugScore += BUG_ONE_SCORE
 	}
+	result.BugDetail = fmt.Sprintf("总bug数: %d\n\n", len(bugs))
 	result.BugGrade = float64(BUG_CARRY_OVER_STANDARD2 - int(deleteBugScore))
 
 	result.TotalGrade = result.ProjectGrade + result.StoryGrade + result.BugGrade
@@ -157,46 +212,102 @@ func (l *RdKpi2) MakeRdReport(path string) error {
 	year := t.Year()
 	month := t.Month()
 
-	// A1. 标题
+	// Sheet1 A1. 标题
 	f.SetCellValue("Sheet1", "A1", fmt.Sprintf("软件服务中心 研发工程师岗%v年%v月绩效考核表", year, int(month)))
 
-	// A2. 被考评人员部门：XXXX
+	// Sheet1 A2. 被考评人员部门：XXXX
 	f.SetCellValue("Sheet1", "A2", "被考评人员部门：软件服务中心")
 
-	// E2. 被考评人员：XXXX
+	// Sheet1 E2. 被考评人员：XXXX
 	f.SetCellValue("Sheet1", "E2", fmt.Sprintf("被考评人员：%v", data.AccountName))
 
-	// F2. 考评人：xxxx
+	// Sheet1 F2. 考评人：xxxx
 	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
 
-	// G4. 项目进度延时率 完成情况
-	
+	// Sheet1 G4. 项目进度延时率 完成情况
+
 	f.SetCellValue("Sheet1", "G4", data.ProjectDetail)
 
-	// H4. 项目进度延时率 最终得分
+	// Sheet1 H4. 项目进度延时率 最终得分
 	f.SetCellValue("Sheet1", "H4", data.ProjectGrade)
 
-	// G5. 需求达成率 完成情况
+	// Sheet1 G5. 需求达成率 完成情况
 	f.SetCellValue("Sheet1", "G5", data.StoryDetail)
 
-	// H5. 需求达成率 最终得分
+	// Sheet1 H5. 需求达成率 最终得分
 	f.SetCellValue("Sheet1", "H5", data.StoryGrade)
 
-	// G6. bug遗留率 完成情况
+	// Sheet1 G6. bug遗留率 完成情况
 	f.SetCellValue("Sheet1", "G6", data.BugDetail)
 
-	// H6. bug遗留率 最终得分
+	// Sheet1 H6. bug遗留率 最终得分
 	f.SetCellValue("Sheet1", "H6", data.BugGrade)
 
-	// H9. 总分数
+	// Sheet1 H9. 总分数
 	f.SetCellValue("Sheet1", "H9", data.TotalGrade)
 
-	// G11. 绩效基数
+	// Sheet1 G11. 绩效基数
 	f.SetCellValue("Sheet1", "G11", data.Coefficient)
 
-	// G14. 最终得分系数
+	
+	// Shee2 A1 Project
+	f.NewSheet("Sheet2")
+	f.SetCellValue("Sheet2", "A1", "项目")
+	rowNum := 2
+	f.SetCellValue("Sheet2", "A2", "项目id")
+	f.SetCellValue("Sheet2", "B2", "项目名称")
+	f.SetCellValue("Sheet2", "C2", "实际结束时间")
+	f.SetCellValue("Sheet2", "D2", "预计结束时间")
+	f.SetCellValue("Sheet2", "E2", "延时天数")
+	for _, project := range data.ProjectDatas {
+		rowNum++
+		f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), project.Root)
+		f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), project.Name)
+		if project.RealEnd != nil {
+			f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), *project.RealEnd)
+		}
+		if project.End != nil {
+			f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), *project.End)
+		}
+		f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), project.DelayDays)
+	}
 
-	// G17. 当月绩效奖金
+	rowNum++
+	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "需求")
+	rowNum++
+	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "需求id")
+	f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), "需求名称")
+	f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), "预估工时")
+	f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), "实际工时")
+	f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), "需求分")
+
+	for _, story := range data.StoryDatas {
+		rowNum++
+		f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), story.StoryId)
+		f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), story.StoryTitle)
+		f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), story.StoryEstimate)
+		f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), story.TaskConsumed)
+		f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), story.StoryBase)
+	}
+
+	rowNum++
+	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "Bug")
+	rowNum++
+	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "Bug id")
+	f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), "Bug 标题")
+	f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), "Bug 状态")
+	f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), "Bug 解决方案")
+
+	for _, bug := range data.BugDatas {
+		rowNum++
+		f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), bug.BugId)
+		f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), bug.BugTitle)
+		f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), bug.BugStatus)
+		f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), bug.BugResolution)
+	}
+	
+
+	
 
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))

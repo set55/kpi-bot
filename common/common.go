@@ -227,3 +227,24 @@ func CalculateDelayDays(realEnd, end string) int {
 	}
 	return delayDays
 }
+
+// readEnd format: 2025-01-31 23:59:59
+// end format: 2025-01-31
+func CalculateDelayDays2(realEnd, end string) int {
+	layout1 := "2006-01-02"
+	layout2 := "2006-01-02 15:04:05"
+	realEndDate, err := time.Parse(layout2, realEnd)
+	if err != nil {
+		log.Fatalf("Error parsing realEnd date: %v\n", err)
+	}
+	endDate, err := time.Parse(layout1, end)
+	if err != nil {
+		log.Fatalf("Error parsing end date: %v\n", err)
+	}
+
+	delayDays := int(realEndDate.Sub(endDate).Hours() / 24)
+	if delayDays < 0 {
+		return 0
+	}
+	return delayDays
+}
