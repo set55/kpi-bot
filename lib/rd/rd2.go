@@ -22,7 +22,7 @@ const (
 
 	// 需求基础 分值
 	STORY_BASE_TIME2  = 0.1   // 小时
-	STORY_BASE_SCORE2 = 0.021 // 分值
+	STORY_BASE_SCORE2 = 0.03 // 分值
 
 	// bug遗留率 分值
 	BUG_CARRY_OVER_STANDARD2 = 30
