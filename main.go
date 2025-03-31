@@ -12,6 +12,7 @@ import (
 	"kpi-bot/lib/test"
 
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 func main() {
@@ -35,8 +36,13 @@ func main() {
 	fmt.Println("Connected to MariaDB successfully!")
 
 	// init bot, and date range
-	beginDatetime := "2025-03-01 00:00:00"
-	endDatetime := "2025-03-31 23:59:59"
+	// Calculate the first and last day of the previous month
+	now := time.Now()
+	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+	beginDatetime := firstOfMonth.AddDate(0, -1, 0).Format("2006-01-02 15:04:05")
+	endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
+	fmt.Println("beginDatetime:", beginDatetime)
+	fmt.Println("endDatetime:", endDatetime)
 	robot := bot.NewBot(db)
 
 
