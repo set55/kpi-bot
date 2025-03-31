@@ -1,0 +1,66 @@
+rm calstblx.dtd
+rm catalog.xml
+rm dbcentx.mod
+rm dbgenent.mod
+rm dbhierx.mod
+rm dbnotnx.mod
+rm dbpoolx.mod
+rm docbook.cat
+rm docbookx.dtd
+x ent/README
+xent/isoamsa.ent
+rm ent/isoamsb.entrm 
+rm ent/isoamsc.ent
+x ent/isoamsn.ent
+x ent/isoamso.ent
+x ent/isoamsr.ent
+x ent/isobox.ent
+x ent/isocyr1.ent
+x ent/isocyr2.ent
+x ent/isodia.ent
+x ent/isogrk1.ent
+x ent/isogrk2.ent
+x ent/isogrk3.ent
+x ent/isogrk4.ent
+x ent/isolat1.ent
+x ent/isolat2.ent
+x ent/isonum.ent
+x ent/isopub.ent
+x ent/isotech.ent
+x htmltblx.mod
+x README
+x soextblx.dtd
+x ChangeLog
+
+rm 
+
+
+meson setup ..                               \
+      --prefix=/usr                          \
+      --wipe
+      --buildtype=release                    \
+      -D man=auto                            \
+      -D docdir=/usr/share/doc/elogind-255.5 \
+      -D cgroup-controller=elogind           \
+      -D dev-kvm-mode=0660                   \
+      -D dbuspolicydir=/etc/dbus-1/system.d
+
+
+      sudo curl -X PUT -T silenceknight.jpg "https://dev-istr-private.obs.cn-east-3.myhuaweicloud.com:443/istr/365/29UE0M4EoQ8/istrdcnuJLkryJzfVmGJPfP/202503/851b0bbfe6dda18042b99196a4b0ea4/1740992132954458482.jpg?AWSAccessKe
+      ✔  17:13:10 
+     yId=CDM64DHSHLTJJVKS3EFH&Expires=1740995732&Signature=WP0ZBWRIeq9LzmwYj%2FFxWU5rmg%3D"
+
+
+sudo curl -X PUT -T ./slienceknight.jpg "https://dev-istr-private.obs.cn-east-3.myhuaweicloud.com:443/istr/365/29UE0M4EoQ8/istrdcnuJLkryJzfVmGJPfP/202503/851b0bbfe6dda178042b99196a4b0ea4/1740992132954458482.jpg?AWSAccessKeyId=CDM64DHSHLTJJVKS3EFH&Expires=1740995732&Signature=WP0ZBWRIeq9LzmwYj/CFxWU5rmg="
+
+
+curl -X PUT -T ./slienceknight.jpg \
+    -w "%{http_code}" \
+    -o /dev/null \
+    -s "https://dev-istr-private.obs.cn-east-3.myhuaweicloud.com:443/istr/365/29UE0M4EoQ8/istrdcnuJLkryJzfVmGJPfP/202503/37e162bc90199b234cbb1e4fb4319c18/1740993706324710304.jpg?AWSAccessKeyId=CDM64DHSHLTJJVKS3EFH&Expires=1740997306&Signature=jckaGbbAZSCwE5WT9dNxfOWIUCk%3D"
+
+
+curl -X PUT -T ./slienceknight.jpg \
+    -w "%{http_code}" \
+    -o /dev/null \
+    -s "https://dev-istr-private.obs.cn-east-3.myhuaweicloud.com:443/istr/365/29UE0M4EoQ8/istrdcnuJLkryJzfVmGJPfP/202503/851b0bbfe6dda18042b99196a4b0ea4/1740992132954458482.jpg?AWSAccessKeyId=CDM64DHSHLTJJVKS3EFH&Expires=1740995732&Signature=WP0ZBWRIeq9LzmwYj%2FFxWU5rmg%3D"

@@ -223,7 +223,7 @@ func QueryRdProjectProgress(db *sql.DB, accounts, rdpms []string, startTime, end
 	sqlCmd := fmt.Sprintf(`
 		select tmp.account, SUM(tmp.plan_diff) as sum_plan_diff, SUM(tmp.real_diff) as sum_real_diff
 		from (
-		select a.account,c.name, c.begin ,c.end,c.realEnd,TIMESTAMPDIFF(DAY,c.begin,c.end) as plan_diff, TIMESTAMPDIFF(DAY,c.begin,c.realEnd) as real_diff
+		select a.account,c.name, c.begin ,c.end,c.realEnd,(TIMESTAMPDIFF(DAY,c.begin,c.end)+1) as plan_diff, (TIMESTAMPDIFF(DAY,c.begin,c.realEnd)+1) as real_diff
 		from zt_user a 
 		inner join zt_team b on b.account = a.account 
 		inner join zt_project c on c.type in("sprint") and c.id = b.root and c.status = "closed" and c.acl in ("open", "private") and openedBy in (%s)

@@ -154,7 +154,8 @@ func (l *RdWithoutTestReportKpi) GetRdKpiWithoutTestReportGrade() map[string]RdW
 			tmp.AvgProgressStandard = GetRdProjectProgressStandard(tmp.AvgDiffRate)
 			tmp.AvgProgressStandardGrade = tmp.AvgProgressStandard * PROJECT_PROGRESS_STANDARD
 			tmp.TotalGrade += tmp.AvgProgressStandardGrade
-			fmt.Printf("account: %v, SumPlanDiffDays: %v, SumRealDiffDays: %v, AvgDiffRate: %v, AvgProgressStandard: %v, AvgProgressStandardGrade: %v, TotalGrade: %v\n", account, tmp.SumPlanDiffDays, tmp.SumRealDiffDays, tmp.AvgDiffRate, tmp.AvgProgressStandard, tmp.AvgProgressStandardGrade, tmp.TotalGrade)
+			fmt.Printf("account: %v, SumPlanDiffDays: %v, SumRealDiffDays: %v, AvgDiffRate: %v, AvgProgressStandard: %v, AvgProgressStandardGrade: %v, TotalGrade: %v\n",
+			account, tmp.SumPlanDiffDays, tmp.SumRealDiffDays, tmp.AvgDiffRate, tmp.AvgProgressStandard, tmp.AvgProgressStandardGrade, tmp.TotalGrade)
 			kpiGrades[account] = tmp
 		}
 	}

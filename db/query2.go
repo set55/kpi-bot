@@ -63,12 +63,12 @@ func QueryRdTasks(db *sql.DB, account, startTime, endTime string) []RdTask {
 	return results
 }
 
-func RdBugs(db *sql.DB, account string) []RdBug {
+func RdBugs(db *sql.DB, account string, endDate string) []RdBug {
 	result := []RdBug{}
 	sqlCmd := fmt.Sprintf(`
 		select id, title, status, resolution from zt_bug 
-		where assignedTo='%s' and status="active" and deleted='0';
-	`, account)
+		where assignedTo='%s' and status="active" and deleted='0' and openedDate <= '%s';
+	`, account, endDate)
 	rows, err := db.Query(sqlCmd)
 	if err != nil {
 		log.Fatalf("Error executing query: %v\n", err)
@@ -89,6 +89,7 @@ func RdBugs(db *sql.DB, account string) []RdBug {
 
 func QueryRdProjects(db *sql.DB, account, startTime, endTime string) []Project {
 	results := []Project{}
+	// todo: zt_team.type = 'execution' is sprint, type = 'project' is project, which one should we use?
 	sqlCmd := fmt.Sprintf(`
 		select zt_team.account, zt_team.root, zt_project.name, zt_project.begin, zt_project.end, zt_project.realBegan, zt_project.realEnd 
 		from zt_team

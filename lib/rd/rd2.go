@@ -22,7 +22,7 @@ const (
 
 	// 需求基础 分值
 	STORY_BASE_TIME2  = 0.1   // 小时
-	STORY_BASE_SCORE2 = 0.03 // 分值
+	STORY_BASE_SCORE2 = 0.025 // 分值
 
 	// bug遗留率 分值
 	BUG_CARRY_OVER_STANDARD2 = 30
@@ -171,7 +171,7 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 	result.StoryDetail = fmt.Sprintf("总需求数: %d\n\n总预估工时: %.2f\n\n总实际工时: %.2f\n\n", totalStoryCount, totalStoryHours, totalTaskHours)
 
 	// bug遗留率
-	bugs := dbQuery.RdBugs(l.Db, l.Account)
+	bugs := dbQuery.RdBugs(l.Db, l.Account, l.EndTime)
 	deleteBugScore := 0.0
 	for _, bug := range bugs {
 		// result.BugDetail += fmt.Sprintf("bug id: %d, bug标题: %s, bug状态: %s, bug解决情况: %s\n\n", bug.BugId, bug.BugTitle, bug.BugStatus, bug.BugResolution)

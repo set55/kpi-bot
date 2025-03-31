@@ -81,6 +81,8 @@ func AccountToName(account string) string {
 		return "王贤明"
 	case "caojianni":
 		return "曹俭妮"
+	case "xiezhiren":
+		return "谢智仁"
 	default:
 		return account
 	}
@@ -154,6 +156,7 @@ func GetRewardByAccount(account string) float64 {
 
 func GetProjectProgressExpectRate(planDiff, realDiff float64) (float64) {
 	fmt.Printf("planDiff: %v, realDiff: %v\n", planDiff, realDiff)
+
 	if planDiff == 0 {
 		return 2 // 若计划天数为0, rate视为大于1.2 给最低0分
 	}
@@ -164,8 +167,9 @@ func GetProjectProgressExpectRate(planDiff, realDiff float64) (float64) {
 	finalPlanDiff := planDiff - float64(planSubstractDays)
 	finalRealDiff := realDiff - float64(realSubstractDays)
 	fmt.Printf("finalPlanDiff: %v, finalRealDiff: %v\n", finalPlanDiff, finalRealDiff)
-
-	return (finalRealDiff / finalPlanDiff) - 1
+	avgRate := (finalRealDiff / finalPlanDiff) - 1
+	fmt.Printf("avgRate: %v\n", avgRate)
+	return avgRate
 }
 
 
