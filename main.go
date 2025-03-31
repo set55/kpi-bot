@@ -35,8 +35,8 @@ func main() {
 	fmt.Println("Connected to MariaDB successfully!")
 
 	// init bot, and date range
-	beginDatetime := "2025-02-01 00:00:00"
-	endDatetime := "2025-02-28 23:59:59"
+	beginDatetime := "2025-03-01 00:00:00"
+	endDatetime := "2025-03-31 23:59:59"
 	robot := bot.NewBot(db)
 
 
