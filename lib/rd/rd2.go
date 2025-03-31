@@ -312,8 +312,8 @@ func (l *RdKpi2) MakeRdReport(path string) error {
 	
 
 	// 建立资料夹
-	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
-	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-绩效考核模板-研发-%v.xlsx", year, int(month), year, int(month), data.AccountName)
+	folderPath := fmt.Sprintf("./export/%v-%v/ssc-rd", year, int(month))
+	filePath := fmt.Sprintf("./export/%v-%v/ssc-rd/%v-%v-绩效考核模板-研发-%v.xlsx", year, int(month), year, int(month), data.AccountName)
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist

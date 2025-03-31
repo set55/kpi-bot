@@ -108,8 +108,8 @@ func MakeRdExcel(path string, data rd.RdKpiGrade) error {
 	f.SetCellValue("Sheet1", "G17", data.TotalGradeStandard*common.GetRewardByAccount(data.Account))
 
 	// 建立资料夹
-	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
-	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-绩效考核模板-研发-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
+	folderPath := fmt.Sprintf("./export/%v-%v/old-rd", year, int(month))
+	filePath := fmt.Sprintf("./export/%v-%v/old-rd/%v-%v-绩效考核模板-研发-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist
@@ -212,8 +212,8 @@ func MakeRdWithoutTestreportExcel(path string, data rd.RdWithoutTestReportKpiGra
 	f.SetCellValue("Sheet1", "G16", data.TotalGradeStandard*common.GetRewardByAccount(data.Account))
 
 	// 建立资料夹
-	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
-	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-绩效考核模板(无测试报告)-研发-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
+	folderPath := fmt.Sprintf("./export/%v-%v/old-rd-withouttest", year, int(month))
+	filePath := fmt.Sprintf("./export/%v-%v/old-rd-withouttest/%v-%v-绩效考核模板(无测试报告)-研发-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist
@@ -318,8 +318,8 @@ func MakePmExcel(path string, data pm.PmKpiGrade) error {
 	f.SetCellValue("Sheet1", "G13", data.TotalGradeStandard)
 
 	// 建立资料夹
-	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
-	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-绩效考核模板-项目-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
+	folderPath := fmt.Sprintf("./export/%v-%v/old-pm", year, int(month))
+	filePath := fmt.Sprintf("./export/%v-%v/old-pm/%v-%v-绩效考核模板-项目-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist
@@ -426,8 +426,8 @@ func MakePmExcelWithoutTestReport(path string, data pm.PmKpiGradeWithoutTestRepo
 	
 
 	// 建立资料夹
-	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
-	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-绩效考核模板(无测试报告)-项目-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
+	folderPath := fmt.Sprintf("./export/%v-%v/old-pm-withouttest", year, int(month))
+	filePath := fmt.Sprintf("./export/%v-%v/old-pm-withouttest/%v-%v-绩效考核模板(无测试报告)-项目-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist
@@ -520,8 +520,8 @@ func MakeTestExcel(path string, data test.TestKpiGrade) error {
 	f.SetCellValue("Sheet1", "G16", data.TotalGradeStandard*common.GetRewardByAccount(data.Account))
 
 	// 建立资料夹
-	folderPath := fmt.Sprintf("./export/%v-%v", year, int(month))
-	filePath := fmt.Sprintf("./export/%v-%v/%v-%v-绩效考核模板-测试-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
+	folderPath := fmt.Sprintf("./export/%v-%v/old-test", year, int(month))
+	filePath := fmt.Sprintf("./export/%v-%v/old-test/%v-%v-绩效考核模板-测试-%v.xlsx", year, int(month), year, int(month), common.AccountToName(data.Account))
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist
