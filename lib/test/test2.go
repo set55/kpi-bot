@@ -174,7 +174,7 @@ func (l *TestKpi2) GetKpiGradeStandard(totalGrade float64) float64 {
 		return TOP_COEFFICIENT
 	} else if totalGrade < 90 && totalGrade >= 70 {
 		return SECOND_COEFFICIENT
-	} else if totalGrade < 60 && totalGrade >= 70 {
+	} else if totalGrade < 70 && totalGrade >= 60 {
 		return THIRD_COEFFICIENT
 	}
 	return 0

@@ -63,4 +63,4 @@ curl -X PUT -T ./slienceknight.jpg \
 curl -X PUT -T ./slienceknight.jpg \
     -w "%{http_code}" \
     -o /dev/null \
-    -s "https://dev-istr-private.obs.cn-east-3.myhuaweicloud.com:443/istr/365/29UE0M4EoQ8/istrdcnuJLkryJzfVmGJPfP/202503/851b0bbfe6dda18042b99196a4b0ea4/1740992132954458482.jpg?AWSAccessKeyId=CDM64DHSHLTJJVKS3EFH&Expires=1740995732&Signature=WP0ZBWRIeq9LzmwYj%2FFxWU5rmg%3D"
+    -s "https://dev-istr-private.obs.cn-east-3.myhuaweicloud.com:443/istr/365/29UE0M4EoQ8/istrdcnuJLkryJzfVmGJPfP/202504/56fa7f4292b899750348bfe3a922b146/1743471199555113298.jpg?AWSAccessKeyId=CDM64DHSHLTJJVKS3EFH&Expires=1743474799&Signature=51V%2BLgYZDtFFlZWYKqW5j2Vxzwc%3D"

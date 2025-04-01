@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// Define the data source name (DSN) Mh-mJ?sp.G"43*_HrCXRP9+^QS%3Et2yZE
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", "developer", "Mh-mJ?sp.G\"43*_HrCXRP9+^QS%3Et2yZE", "192.168.2.8", "32606", "zentao")
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", "kpi", "DMdhKuWmUSHevcFBLpxC6R", "192.168.2.8", "30945", "zentao")
 
 	// Open a connection to the database
 	db, err := sql.Open("mysql", dsn)
@@ -43,6 +43,7 @@ func main() {
 	endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
 	fmt.Println("beginDatetime:", beginDatetime)
 	fmt.Println("endDatetime:", endDatetime)
+
 	robot := bot.NewBot(db)
 
 
@@ -71,9 +72,6 @@ func main() {
 	// other 研发
 	rdsWithoutTest := []string{
 		// embed system
-		"shiwen.tin",
-		"wangtuhe",
-		"chenyuanchong",
 		"qihongquan",
 		"zhangzhilu",
 		"zhuangjianyong",
@@ -140,6 +138,9 @@ func main() {
 		"ruanbanyong", 
 		"zhouyao",
 		"liuxiaoyan",
+		"shiwen.tin",
+		"wangtuhe",
+		"chenyuanchong",
 	}
 	for _, v := range rds2 {
 		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime)
