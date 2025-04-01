@@ -25,7 +25,7 @@ func main() {
 		log.Fatalf("Error opening database: %v\n", err)
 	}
 	defer db.Close()
-
+	
 	// Ping the database to verify the connection
 	err = db.Ping()
 	if err != nil {
