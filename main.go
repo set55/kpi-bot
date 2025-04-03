@@ -47,41 +47,41 @@ func main() {
 	robot := bot.NewBot(db)
 
 	
-	// other 研发
-	rdsWithoutTest := []string{
-		// embed system
-		"qihongquan",
-		"zhangzhilu",
-		"zhuangjianyong",
-		"wangxianming",
-	}
+	// // other 研发
+	// rdsWithoutTest := []string{
+	// 	// embed system
+	// 	"qihongquan",
+	// 	"zhangzhilu",
+	// 	"zhuangjianyong",
+	// 	"wangxianming",
+	// }
 	
-	rdsWithoutTestProjectPms := []string{
-		"guoqiao.chen",
-		"shawn.wang",
-		"simon.chen",
-		"qixiaofeng",
-		"set.su",
-		"justin.lee",
-		"caojianni",
-	}
-	err = robot.ProduceRdKpiWithoutTestReport("./excel/kpi-rd-without.xlsx", beginDatetime, endDatetime, rdsWithoutTest, rdsWithoutTestProjectPms)
-	if err != nil {
-		log.Fatalf("error produceRdKpiWithoutTestreport: %v", err)
-	}
+	// rdsWithoutTestProjectPms := []string{
+	// 	"guoqiao.chen",
+	// 	"shawn.wang",
+	// 	"simon.chen",
+	// 	"qixiaofeng",
+	// 	"set.su",
+	// 	"justin.lee",
+	// 	"caojianni",
+	// }
+	// err = robot.ProduceRdKpiWithoutTestReport("./excel/kpi-rd-without.xlsx", beginDatetime, endDatetime, rdsWithoutTest, rdsWithoutTestProjectPms)
+	// if err != nil {
+	// 	log.Fatalf("error produceRdKpiWithoutTestreport: %v", err)
+	// }
 
-	// 项目经理
-	pms := []string{
-		"qixiaofeng",
-		"jiangjiahui",
-		"caojianni",
-		"shawn.wang",
-		"simon.chen",
-	}
-	err = robot.ProducePmKpi("./excel/pmnew.xlsx", beginDatetime, endDatetime, pms)
-	if err != nil {
-		log.Fatalf("error ProducePmKpi: %v", err)
-	}
+	// // 项目经理
+	// pms := []string{
+	// 	"qixiaofeng",
+	// 	"jiangjiahui",
+	// 	"caojianni",
+	// 	"shawn.wang",
+	// 	"simon.chen",
+	// }
+	// err = robot.ProducePmKpi("./excel/pmnew.xlsx", beginDatetime, endDatetime, pms)
+	// if err != nil {
+	// 	log.Fatalf("error ProducePmKpi: %v", err)
+	// }
 
 	// 项目经理(不包含测试)
 	pmsWithoutTest := []string{"guoqiao.chen"}
