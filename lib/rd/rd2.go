@@ -19,21 +19,21 @@ type (
 		// 起始时间
 		StartTime string
 		// 结束时间
-		EndTime string
+		EndTime     string
 		Coefficient RdCoefficient
 	}
 
 	RdCoefficient struct {
-		PROJECT_PROGRESS_STANDARD float64
-		DELAY_DAYS_SCORE 	 float64
-		STORY_STANDARD 	 float64
-		STORY_BASE_TIME 	 float64
-		STORY_BASE_SCORE 	 float64
-		BUG_CARRY_OVER_STANDARD float64
-		BUG_ONE_SCORE 	 float64
-		TOP_COEFFICIENT 	 float64
-		SECOND_COEFFICIENT 	 float64
-		THIRD_COEFFICIENT 	 float64
+		PROJECT_PROGRESS_STANDARD float64 // 项目进度總分
+		DELAY_DAYS_SCORE          float64 // 延时天数分数
+		STORY_STANDARD            float64 // 需求完成總分
+		STORY_BASE_TIME           float64 // 需求基础分时间
+		STORY_BASE_SCORE          float64 // 需求基础分数
+		BUG_CARRY_OVER_STANDARD   float64 // bug遗留率總分
+		BUG_ONE_SCORE             float64 // bug一个分数
+		TOP_COEFFICIENT           float64 // 最高系数
+		SECOND_COEFFICIENT        float64 // 第二系数
+		THIRD_COEFFICIENT         float64 // 第三系数
 	}
 
 	RdKpiResult2 struct {
@@ -82,10 +82,10 @@ type (
 // NewRdKpi 创建一个研发KPI对象
 func NewRdKpi2(db *sql.DB, account, startTime, endTime string, coefficient RdCoefficient) *RdKpi2 {
 	return &RdKpi2{
-		Account:   account,
-		Db:        db,
-		StartTime: startTime,
-		EndTime:   endTime,
+		Account:     account,
+		Db:          db,
+		StartTime:   startTime,
+		EndTime:     endTime,
 		Coefficient: coefficient,
 	}
 }
@@ -115,7 +115,7 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 		// result.ProjectDetail += fmt.Sprintf("项目名称: %s 延时天数: %d\n\n",project.Name, ddays)
 	}
 	// 项目进度分数
-	result.ProjectGrade = float64(int(l.Coefficient.PROJECT_PROGRESS_STANDARD) - delayDays* int(l.Coefficient.DELAY_DAYS_SCORE))
+	result.ProjectGrade = float64(int(l.Coefficient.PROJECT_PROGRESS_STANDARD) - delayDays*int(l.Coefficient.DELAY_DAYS_SCORE))
 	if result.ProjectGrade < 0 {
 		result.ProjectGrade = 0
 	}
@@ -147,7 +147,7 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 		}
 	}
 	totalStoryHours := 0.0 // 预估工时
-	totalTaskHours := 0.0 // 实际工时
+	totalTaskHours := 0.0  // 实际工时
 	totalStoryCount := 0
 	for _, story := range storyMap {
 		// 需求基础分
@@ -164,6 +164,9 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 		totalStoryHours += story.StoryEstimate
 		totalTaskHours += story.TaskConsumed
 		totalStoryCount++
+	}
+	if result.StoryGrade > l.Coefficient.STORY_STANDARD {
+		result.StoryGrade = l.Coefficient.STORY_STANDARD
 	}
 	result.StoryDetail = fmt.Sprintf("总需求数: %d\n\n总预估工时: %.2f\n\n总实际工时: %.2f\n\n", totalStoryCount, totalStoryHours, totalTaskHours)
 
@@ -249,7 +252,6 @@ func (l *RdKpi2) MakeRdReport(department, career, dir, boss, path string) error 
 	// Sheet1 G11. 绩效基数
 	f.SetCellValue("Sheet1", "G11", data.Coefficient)
 
-	
 	// Shee2 A1 Project
 	f.NewSheet("Sheet2")
 	f.SetColWidth("Sheet2", "A", "E", 20)
@@ -307,9 +309,6 @@ func (l *RdKpi2) MakeRdReport(department, career, dir, boss, path string) error 
 		f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), bug.BugStatus)
 		f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), bug.BugResolution)
 	}
-	
-
-	
 
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v/%s", year, int(month), dir)

@@ -24,14 +24,14 @@ type (
 	}
 
 	TestCoefficient struct {
-		TEST_PROGRESS_STANDARD    float64
-		DELAY_DAYS_SCORE          float64
-		VALIDATE_BUG_RATE_STANDARD float64
-		BUG_TO_STORY_NUM_STANDARD  float64
-		BUG_ONE_GRADE              float64
-		TOP_COEFFICIENT           float64
-		SECOND_COEFFICIENT        float64
-		THIRD_COEFFICIENT         float64
+		TEST_PROGRESS_STANDARD    float64	// 测试进度總分
+		DELAY_DAYS_SCORE          float64	// 延迟天数分数
+		VALIDATE_BUG_RATE_STANDARD float64	// 有效bug率總分
+		BUG_TO_STORY_NUM_STANDARD  float64	// bug转需求数總分
+		BUG_ONE_GRADE              float64	// bug转需求数分数
+		TOP_COEFFICIENT           float64	// 绩效系数
+		SECOND_COEFFICIENT        float64	// 绩效系数
+		THIRD_COEFFICIENT         float64	// 绩效系数
 	}
 
 	TestKpiResult struct {
@@ -160,6 +160,10 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 	}
 	result.ToStoryDetail = fmt.Sprintf("bug转需求数: %d\n\n", toStoryBugs)
 	result.ToStoryGrade = float64(toStoryBugs) * l.Coefficient.BUG_ONE_GRADE
+
+	if result.ToStoryGrade > l.Coefficient.BUG_TO_STORY_NUM_STANDARD {
+		result.ToStoryGrade = l.Coefficient.BUG_TO_STORY_NUM_STANDARD
+	}
 
 	// 计算总分
 	result.TotalGrade = result.ReportGrade + result.BugGrade + result.ToStoryGrade
