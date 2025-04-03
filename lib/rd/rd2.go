@@ -12,28 +12,6 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-const (
-	// 项目进度延时率 分值
-	PROJECT_PROGRESS_STANDARD2 = 40
-	DELAY_DAYS_SCORE           = 4
-
-	// 需求完成率 分值
-	STORY_STANDARD2 = 30
-
-	// 需求基础 分值
-	STORY_BASE_TIME2  = 0.1   // 小时
-	STORY_BASE_SCORE2 = 0.025 // 分值
-
-	// bug遗留率 分值
-	BUG_CARRY_OVER_STANDARD2 = 30
-	BUG_ONE_SCORE            = 2
-
-	// 系数
-	TOP_COEFFICIENT2    = 1.2
-	SECOND_COEFFICIENT2 = 1.0
-	THIRD_COEFFICIENT2  = 0.8
-)
-
 type (
 	RdKpi2 struct {
 		Account string
@@ -42,6 +20,20 @@ type (
 		StartTime string
 		// 结束时间
 		EndTime string
+		Coefficient RdCoefficient
+	}
+
+	RdCoefficient struct {
+		PROJECT_PROGRESS_STANDARD float64
+		DELAY_DAYS_SCORE 	 float64
+		STORY_STANDARD 	 float64
+		STORY_BASE_TIME 	 float64
+		STORY_BASE_SCORE 	 float64
+		BUG_CARRY_OVER_STANDARD float64
+		BUG_ONE_SCORE 	 float64
+		TOP_COEFFICIENT 	 float64
+		SECOND_COEFFICIENT 	 float64
+		THIRD_COEFFICIENT 	 float64
 	}
 
 	RdKpiResult2 struct {
@@ -88,12 +80,13 @@ type (
 )
 
 // NewRdKpi 创建一个研发KPI对象
-func NewRdKpi2(db *sql.DB, account, startTime, endTime string) *RdKpi2 {
+func NewRdKpi2(db *sql.DB, account, startTime, endTime string, coefficient RdCoefficient) *RdKpi2 {
 	return &RdKpi2{
 		Account:   account,
 		Db:        db,
 		StartTime: startTime,
 		EndTime:   endTime,
+		Coefficient: coefficient,
 	}
 }
 
@@ -101,7 +94,11 @@ func NewRdKpi2(db *sql.DB, account, startTime, endTime string) *RdKpi2 {
 func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 	result.StartTime = l.StartTime
 	result.EndTime = l.EndTime
-	result.AccountName = common.AccountToName(l.Account)
+	result.AccountName = l.Account
+	account := dbQuery.QueryAccount(l.Db, l.Account)
+	if account.RealName != "" {
+		result.AccountName = account.RealName
+	}
 	projects := dbQuery.QueryRdProjects(l.Db, l.Account, l.StartTime, l.EndTime)
 	delayDays := 0
 	// 项目进度完成情况
@@ -118,7 +115,7 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 		// result.ProjectDetail += fmt.Sprintf("项目名称: %s 延时天数: %d\n\n",project.Name, ddays)
 	}
 	// 项目进度分数
-	result.ProjectGrade = float64(PROJECT_PROGRESS_STANDARD2 - delayDays*DELAY_DAYS_SCORE)
+	result.ProjectGrade = float64(int(l.Coefficient.PROJECT_PROGRESS_STANDARD) - delayDays* int(l.Coefficient.DELAY_DAYS_SCORE))
 	if result.ProjectGrade < 0 {
 		result.ProjectGrade = 0
 	}
@@ -154,7 +151,7 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 	totalStoryCount := 0
 	for _, story := range storyMap {
 		// 需求基础分
-		storyBase := GetStoryBase2(story.StoryEstimate, story.TaskConsumed)
+		storyBase := l.GetStoryBase2(story.StoryEstimate, story.TaskConsumed)
 		result.StoryDatas = append(result.StoryDatas, StoryData{
 			StoryId:       story.StoryId,
 			StoryTitle:    story.StoryTitle,
@@ -181,18 +178,21 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 			BugStatus:     bug.BugStatus,
 			BugResolution: bug.BugResolution,
 		})
-		deleteBugScore += BUG_ONE_SCORE
+		deleteBugScore += l.Coefficient.BUG_ONE_SCORE
 	}
 	result.BugDetail = fmt.Sprintf("总bug数: %d\n\n", len(bugs))
-	result.BugGrade = float64(BUG_CARRY_OVER_STANDARD2 - int(deleteBugScore))
+	result.BugGrade = float64(int(l.Coefficient.BUG_CARRY_OVER_STANDARD) - int(deleteBugScore))
+	if result.BugGrade < 0 {
+		result.BugGrade = 0
+	}
 
 	result.TotalGrade = result.ProjectGrade + result.StoryGrade + result.BugGrade
 
-	result.Coefficient = GetKpiGradeStandard2(result.TotalGrade)
+	result.Coefficient = l.GetKpiGradeStandard2(result.TotalGrade)
 	return result
 }
 
-func (l *RdKpi2) MakeRdReport(path string) error {
+func (l *RdKpi2) MakeRdReport(department, career, dir, boss, path string) error {
 	data := l.GetRdKpiGrade2()
 
 	f, err := excelize.OpenFile(path)
@@ -213,16 +213,16 @@ func (l *RdKpi2) MakeRdReport(path string) error {
 	month := t.Month()
 
 	// Sheet1 A1. 标题
-	f.SetCellValue("Sheet1", "A1", fmt.Sprintf("软件服务中心 研发工程师岗%v年%v月绩效考核表", year, int(month)))
+	f.SetCellValue("Sheet1", "A1", fmt.Sprintf("%s %s岗%v年%v月绩效考核表", department, career, year, int(month)))
 
 	// Sheet1 A2. 被考评人员部门：XXXX
-	f.SetCellValue("Sheet1", "A2", "被考评人员部门：软件服务中心")
+	f.SetCellValue("Sheet1", "A2", "被考评人员部门："+department)
 
 	// Sheet1 E2. 被考评人员：XXXX
 	f.SetCellValue("Sheet1", "E2", fmt.Sprintf("被考评人员：%v", data.AccountName))
 
 	// Sheet1 F2. 考评人：xxxx
-	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
+	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", boss))
 
 	// Sheet1 G4. 项目进度延时率 完成情况
 
@@ -312,8 +312,8 @@ func (l *RdKpi2) MakeRdReport(path string) error {
 	
 
 	// 建立资料夹
-	folderPath := fmt.Sprintf("./export/%v-%v/ssc-rd", year, int(month))
-	filePath := fmt.Sprintf("./export/%v-%v/ssc-rd/%v-%v-绩效考核模板-研发-%v.xlsx", year, int(month), year, int(month), data.AccountName)
+	folderPath := fmt.Sprintf("./export/%v-%v/%s", year, int(month), dir)
+	filePath := fmt.Sprintf("./export/%v-%v/%s/%v-%v-绩效考核模板-研发-%v.xlsx", year, int(month), dir, year, int(month), data.AccountName)
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist
@@ -334,17 +334,17 @@ func (l *RdKpi2) MakeRdReport(path string) error {
 }
 
 // GetStoryBase 获取需求基础分
-func GetStoryBase2(estimate, consumed float64) float64 {
-	return (estimate / STORY_BASE_TIME2) * STORY_BASE_SCORE2
+func (l *RdKpi2) GetStoryBase2(estimate, consumed float64) float64 {
+	return (estimate / l.Coefficient.STORY_BASE_TIME) * l.Coefficient.STORY_BASE_SCORE
 }
 
-func GetKpiGradeStandard2(totalGrade float64) float64 {
+func (l *RdKpi2) GetKpiGradeStandard2(totalGrade float64) float64 {
 	if totalGrade >= 90 {
-		return TOP_COEFFICIENT2
+		return l.Coefficient.TOP_COEFFICIENT
 	} else if totalGrade < 90 && totalGrade >= 70 {
-		return SECOND_COEFFICIENT2
+		return l.Coefficient.SECOND_COEFFICIENT
 	} else if totalGrade < 70 && totalGrade >= 60 {
-		return THIRD_COEFFICIENT2
+		return l.Coefficient.THIRD_COEFFICIENT
 	}
 	return 0
 }

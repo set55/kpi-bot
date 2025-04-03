@@ -12,24 +12,6 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-const (
-	// 测试软件项目进度达成率 分值
-	TEST_PROGRESS_STANDARD2 = 40
-	DELAY_DAYS_SCORE        = 4
-
-	// 测试软件项目有效bug率
-	VALIDATE_BUG_RATE_STANDARD2 = 40
-
-	// bug转需求数
-	BUG_TO_STORY_NUM_STANDARD2 = 20
-	BUG_ONE_GRADE2             = 2
-
-	// 系数
-	TOP_COEFFICIENT2    = 1.2
-	SECOND_COEFFICIENT2 = 1.0
-	THIRD_COEFFICIENT2  = 0.8
-)
-
 type (
 	TestKpi2 struct {
 		Account string
@@ -38,6 +20,18 @@ type (
 		StartTime string
 		// 结束时间
 		EndTime string
+		Coefficient TestCoefficient
+	}
+
+	TestCoefficient struct {
+		TEST_PROGRESS_STANDARD    float64
+		DELAY_DAYS_SCORE          float64
+		VALIDATE_BUG_RATE_STANDARD float64
+		BUG_TO_STORY_NUM_STANDARD  float64
+		BUG_ONE_GRADE              float64
+		TOP_COEFFICIENT           float64
+		SECOND_COEFFICIENT        float64
+		THIRD_COEFFICIENT         float64
 	}
 
 	TestKpiResult struct {
@@ -85,20 +79,25 @@ type (
 )
 
 // NewTestKpi 创建一个测试KPI对象
-func NewTestKpi2(db *sql.DB, account, startTime, endTime string) *TestKpi2 {
+func NewTestKpi2(db *sql.DB, account, startTime, endTime string, coefficient TestCoefficient) *TestKpi2 {
 	return &TestKpi2{
 		Account:   account,
 		Db:        db,
 		StartTime: startTime,
 		EndTime:   endTime,
+		Coefficient: coefficient,
 	}
 }
 
 // GetTestKpiGrade 获取测试KPI信息
 func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
-	result.AccountName = common.AccountToName(l.Account)
 	result.StartTime = l.StartTime
 	result.EndTime = l.EndTime
+	result.AccountName = l.Account
+	account := dbQuery.QueryAccount(l.Db, l.Account)
+	if account.RealName != "" {
+		result.AccountName = account.RealName
+	}
 
 	// 获取测试报告
 	testreports := dbQuery.QueryTestReport(l.Db, l.Account, l.StartTime, l.EndTime)
@@ -119,7 +118,7 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 	}
 
 	result.ReportDetail = fmt.Sprintf("測試報告數量: %d, 总延迟天数: %d\n\n", len(testreports), delaydays) + result.ReportDetail
-	result.ReportGrade = float64(TEST_PROGRESS_STANDARD2 - delaydays*DELAY_DAYS_SCORE)
+	result.ReportGrade = float64(int(l.Coefficient.TEST_PROGRESS_STANDARD) - delaydays*int(l.Coefficient.DELAY_DAYS_SCORE))
 	if result.ReportGrade < 0 {
 		result.ReportGrade = 0
 	}
@@ -143,7 +142,7 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 
 	// 有效bug率
 	bugRate := float64(validateBugs) / float64(len(bugs))
-	result.BugGrade = l.ConverBugRateToBaseNumber(bugRate) * VALIDATE_BUG_RATE_STANDARD2
+	result.BugGrade = l.ConverBugRateToBaseNumber(bugRate) * l.Coefficient.VALIDATE_BUG_RATE_STANDARD
 	result.BugDetail = fmt.Sprintf("有效bug数: %d, 总bug数: %d, 有效bug率: %.2f\n\n", validateBugs, len(bugs), bugRate) + result.BugDetail
 
 	// bug转需求数
@@ -160,7 +159,7 @@ func (l *TestKpi2) GetTestKpiGrade() (result TestKpiResult) {
 		})
 	}
 	result.ToStoryDetail = fmt.Sprintf("bug转需求数: %d\n\n", toStoryBugs)
-	result.ToStoryGrade = float64(toStoryBugs) * BUG_ONE_GRADE2
+	result.ToStoryGrade = float64(toStoryBugs) * l.Coefficient.BUG_ONE_GRADE
 
 	// 计算总分
 	result.TotalGrade = result.ReportGrade + result.BugGrade + result.ToStoryGrade
@@ -196,7 +195,7 @@ func (l *TestKpi2) ConverBugRateToBaseNumber(bugRate float64) float64 {
 	}
 }
 
-func (l *TestKpi2) MakeTestReport(path string) error {
+func (l *TestKpi2) MakeTestReport(department, career, dir, boss, path string) error {
 	data := l.GetTestKpiGrade()
 
 	f, err := excelize.OpenFile(path)
@@ -217,16 +216,16 @@ func (l *TestKpi2) MakeTestReport(path string) error {
 	month := t.Month()
 
 	// A1. 标题
-	f.SetCellValue("Sheet1", "A1", fmt.Sprintf("软件服务中心 測試工程师岗%v年%v月绩效考核表", year, int(month)))
+	f.SetCellValue("Sheet1", "A1", fmt.Sprintf("%s %s岗%v年%v月绩效考核表", department, career, year, int(month)))
 
 	// A2. 被考评人员部门：XXXX
-	f.SetCellValue("Sheet1", "A2", "被考评人员部门：软件服务中心")
+	f.SetCellValue("Sheet1", "A2", "被考评人员部门："+department)
 
 	// E2. 被考评人员：XXXX
 	f.SetCellValue("Sheet1", "E2", fmt.Sprintf("被考评人员：%v", data.AccountName))
 
 	// F2. 考评人：xxxx
-	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
+	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", boss))
 
 	// G4. 项目进度延时率 完成情况
 
@@ -312,7 +311,7 @@ func (l *TestKpi2) MakeTestReport(path string) error {
 
 	// 建立资料夹
 	folderPath := fmt.Sprintf("./export/%v-%v/ssc-test", year, int(month))
-	filePath := fmt.Sprintf("./export/%v-%v/ssc-test/%v-%v-绩效考核模板-測試-%v.xlsx", year, int(month), year, int(month), data.AccountName)
+	filePath := fmt.Sprintf("./export/%v-%v/%s/%v-%v-绩效考核模板-測試-%v.xlsx", year, int(month), dir, year, int(month), data.AccountName)
 	// Check if the folder exists
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
 		// Create the folder if it does not exist

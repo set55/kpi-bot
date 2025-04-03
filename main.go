@@ -25,7 +25,7 @@ func main() {
 		log.Fatalf("Error opening database: %v\n", err)
 	}
 	defer db.Close()
-	
+
 	// Ping the database to verify the connection
 	err = db.Ping()
 	if err != nil {
@@ -46,28 +46,6 @@ func main() {
 
 	robot := bot.NewBot(db)
 
-
-	// app 研发
-	rds := []string{
-		"alan.tin",
-		"jihuaqing",
-		"liuhongtao",
-	}
-	rdProjectPms := []string{
-		"guoqiao.chen",
-		"shawn.wang",
-		"simon.chen",
-		"qixiaofeng",
-		"set.su",
-		"justin.lee",
-		"jiangjiahui",
-		"caojianni",
-	}
-	err = robot.ProduceRdKpi("./excel/kpi-rd.xlsx", beginDatetime, endDatetime, rds, rdProjectPms)
-	if err != nil {
-		log.Fatalf("Error produceRdKpi: %v", err)
-	}
-
 	
 	// other 研发
 	rdsWithoutTest := []string{
@@ -76,18 +54,6 @@ func main() {
 		"zhangzhilu",
 		"zhuangjianyong",
 		"wangxianming",
-		// devops
-		// "justin.lee",
-		// 阿崔部门 研发
-		"zengyi",
-		"chenbo",
-		"lixiaolong",
-		"tangjilin",
-		"jiaoxiangjie",
-		"bieji",
-		"suiguanyou",
-		"lishuaipeng",
-		"liuxiaoyun",
 	}
 	
 	rdsWithoutTestProjectPms := []string{
@@ -103,8 +69,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("error produceRdKpiWithoutTestreport: %v", err)
 	}
-
-	
 
 	// 项目经理
 	pms := []string{
@@ -138,13 +102,21 @@ func main() {
 		"ruanbanyong", 
 		"zhouyao",
 		"liuxiaoyan",
-		"shiwen.tin",
-		"wangtuhe",
-		"chenyuanchong",
 	}
 	for _, v := range rds2 {
-		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime)
-		err := tmp.MakeRdReport("./excel/kpi-rd2-2.xlsx")
+		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
+			PROJECT_PROGRESS_STANDARD: 40,
+			DELAY_DAYS_SCORE: 4,
+			STORY_STANDARD: 30,
+			STORY_BASE_TIME: 0.1,
+			STORY_BASE_SCORE: 0.025,
+			BUG_CARRY_OVER_STANDARD: 30,
+			BUG_ONE_SCORE: 2,
+			TOP_COEFFICIENT: 1.2,
+			SECOND_COEFFICIENT: 1.0,
+			THIRD_COEFFICIENT: 0.8,
+		})
+		err := tmp.MakeRdReport("软件服务中心", "研发工程师", "ssc-rd", "Set", "./excel/kpi-rd2-2.xlsx")
 		if err != nil {
 			log.Fatalf("error MakeRdReport: %v", err)
 		}
@@ -158,10 +130,80 @@ func main() {
 		"xiezhiren",
 	}
 	for _, v := range test2 {
-		tmp := test.NewTestKpi2(db, v, beginDatetime, endDatetime)
-		err := tmp.MakeTestReport("./excel/kpi-test2.xlsx")
+		tmp := test.NewTestKpi2(db, v, beginDatetime, endDatetime, test.TestCoefficient{
+			TEST_PROGRESS_STANDARD: 40,
+			DELAY_DAYS_SCORE: 4,
+			VALIDATE_BUG_RATE_STANDARD: 40,
+			BUG_TO_STORY_NUM_STANDARD: 20,
+			BUG_ONE_GRADE: 2,
+			TOP_COEFFICIENT: 1.2,
+			SECOND_COEFFICIENT: 1.0,
+			THIRD_COEFFICIENT: 0.8,
+		})
+		err := tmp.MakeTestReport("软件服务中心", "测试工程师", "ssc-test", "Set", "./excel/kpi-test2.xlsx")
 		if err != nil {
 			log.Fatalf("error MakeTestReport: %v", err)
+		}
+	}
+
+	// APP RD 阿崔部门 研发
+	app := []string{
+		"alan.tin",
+		"jihuaqing",
+		"liuhongtao",
+		"yuanpengfei",
+		"zengyi",
+		"chenbo",
+		"lixiaolong",
+		"tangjilin",
+		"jiaoxiangjie",
+		"bieji",
+		"suiguanyou",
+		"lishuaipeng",
+		"liuxiaoyun",
+		"chenqi",
+	}
+	for _, v := range app {
+		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
+			PROJECT_PROGRESS_STANDARD: 40,
+			DELAY_DAYS_SCORE: 4,
+			STORY_STANDARD: 30,
+			STORY_BASE_TIME: 0.1,
+			STORY_BASE_SCORE: 0.025,
+			BUG_CARRY_OVER_STANDARD: 30,
+			BUG_ONE_SCORE: 2,
+			TOP_COEFFICIENT: 1.2,
+			SECOND_COEFFICIENT: 1.0,
+			THIRD_COEFFICIENT: 0.8,
+		})
+		err := tmp.MakeRdReport("APP开发部", "研发工程师", "app-rd", "曾宪崔", "./excel/kpi-rd2-2.xlsx")
+		if err != nil {
+			log.Fatalf("error MakeRdReport: %v", err)
+		}
+	}
+
+	// 软件6部 方世文
+	embed6 := []string{
+		"shiwen.tin",
+		"wangtuhe",
+		"chenyuanchong",
+	}
+	for _, v := range embed6 {
+		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
+			PROJECT_PROGRESS_STANDARD: 40,
+			DELAY_DAYS_SCORE: 4,
+			STORY_STANDARD: 30,
+			STORY_BASE_TIME: 0.1,
+			STORY_BASE_SCORE: 0.025,
+			BUG_CARRY_OVER_STANDARD: 30,
+			BUG_ONE_SCORE: 2,
+			TOP_COEFFICIENT: 1.2,
+			SECOND_COEFFICIENT: 1.0,
+			THIRD_COEFFICIENT: 0.8,
+		})
+		err := tmp.MakeRdReport("软件6部", "研发工程师", "embed6-rd", "方世文", "./excel/kpi-rd2-2.xlsx")
+		if err != nil {
+			log.Fatalf("error MakeRdReport: %v", err)
 		}
 	}
 

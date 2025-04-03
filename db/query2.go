@@ -35,6 +35,11 @@ type (
 		RealBegan *string
 		RealEnd   *string
 	}
+
+	Account struct {
+		Account string
+		RealName string
+	}
 )
 
 func QueryRdTasks(db *sql.DB, account, startTime, endTime string) []RdTask {
@@ -112,4 +117,26 @@ func QueryRdProjects(db *sql.DB, account, startTime, endTime string) []Project {
 		results = append(results, result)
 	}
 	return results
+}
+
+func QueryAccount(db *sql.DB, account string) Account {
+	sqlCmd := fmt.Sprintf(`
+		select account, realname from zt_user 
+		where account='%s';
+	`, account)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+
+	defer rows.Close()
+
+	var result Account
+	for rows.Next() {
+		err := rows.Scan(&result.Account, &result.RealName)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+	}
+	return result
 }
