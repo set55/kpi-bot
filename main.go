@@ -41,6 +41,8 @@ func main() {
 	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
 	beginDatetime := firstOfMonth.AddDate(0, -1, 0).Format("2006-01-02 15:04:05")
 	endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
+	// beginDatetime = "2025-04-01 00:00:00"
+	// endDatetime = "2025-04-30 23:59:59"
 	fmt.Println("beginDatetime:", beginDatetime)
 	fmt.Println("endDatetime:", endDatetime)
 
@@ -155,13 +157,11 @@ func main() {
 		"zengyi",
 		"chenbo",
 		"lixiaolong",
-		"tangjilin",
 		"jiaoxiangjie",
 		"bieji",
-		"suiguanyou",
-		"lishuaipeng",
-		"liuxiaoyun",
 		"chenqi",
+		"yuanhenghui",
+		"liusang",
 	}
 	for _, v := range app {
 		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
