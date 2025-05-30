@@ -9,7 +9,7 @@ import (
 	"log"
 
 	"kpi-bot/lib/rd"
-	"kpi-bot/lib/test"
+	// "kpi-bot/lib/test"
 
 	_ "github.com/go-sql-driver/mysql"
 	"time"
@@ -37,12 +37,15 @@ func main() {
 
 	// init bot, and date range
 	// Calculate the first and last day of the previous month
+
 	now := time.Now()
-	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-	beginDatetime := firstOfMonth.AddDate(0, -1, 0).Format("2006-01-02 15:04:05")
-	endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
-	// beginDatetime = "2025-04-01 00:00:00"
-	// endDatetime = "2025-04-30 23:59:59"
+	fmt.Printf("Current time: %s\n", now.Format("2006-01-02 15:04:05"))
+	// firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+	// beginDatetime := firstOfMonth.AddDate(0, -1, 0).Format("2006-01-02 15:04:05")
+	// endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
+	
+	beginDatetime := "2025-05-01 00:00:00"
+	endDatetime := "2025-05-31 23:59:59"
 	fmt.Println("beginDatetime:", beginDatetime)
 	fmt.Println("endDatetime:", endDatetime)
 
@@ -125,28 +128,28 @@ func main() {
 	}
 
 	// SSC TEST
-	test2 := []string{
-		"linyanhai",
-		"wangshaoyu",
-		"pengzijie",
-		"xiezhiren",
-	}
-	for _, v := range test2 {
-		tmp := test.NewTestKpi2(db, v, beginDatetime, endDatetime, test.TestCoefficient{
-			TEST_PROGRESS_STANDARD: 40,
-			DELAY_DAYS_SCORE: 4,
-			VALIDATE_BUG_RATE_STANDARD: 40,
-			BUG_TO_STORY_NUM_STANDARD: 20,
-			BUG_ONE_GRADE: 2,
-			TOP_COEFFICIENT: 1.2,
-			SECOND_COEFFICIENT: 1.0,
-			THIRD_COEFFICIENT: 0.8,
-		})
-		err := tmp.MakeTestReport("软件服务中心", "测试工程师", "ssc-test", "Set", "./excel/kpi-test2.xlsx")
-		if err != nil {
-			log.Fatalf("error MakeTestReport: %v", err)
-		}
-	}
+	// test2 := []string{
+	// 	"linyanhai",
+	// 	"wangshaoyu",
+	// 	"pengzijie",
+	// 	"xiezhiren",
+	// }
+	// for _, v := range test2 {
+	// 	tmp := test.NewTestKpi2(db, v, beginDatetime, endDatetime, test.TestCoefficient{
+	// 		TEST_PROGRESS_STANDARD: 40,
+	// 		DELAY_DAYS_SCORE: 4,
+	// 		VALIDATE_BUG_RATE_STANDARD: 40,
+	// 		BUG_TO_STORY_NUM_STANDARD: 20,
+	// 		BUG_ONE_GRADE: 2,
+	// 		TOP_COEFFICIENT: 1.2,
+	// 		SECOND_COEFFICIENT: 1.0,
+	// 		THIRD_COEFFICIENT: 0.8,
+	// 	})
+	// 	err := tmp.MakeTestReport("软件服务中心", "测试工程师", "ssc-test", "Set", "./excel/kpi-test2.xlsx")
+	// 	if err != nil {
+	// 		log.Fatalf("error MakeTestReport: %v", err)
+	// 	}
+	// }
 
 	// APP RD 阿崔部门 研发
 	app := []string{
@@ -165,22 +168,51 @@ func main() {
 	}
 	for _, v := range app {
 		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
-			PROJECT_PROGRESS_STANDARD: 40,
-			DELAY_DAYS_SCORE: 4,
-			STORY_STANDARD: 30,
+			PROJECT_PROGRESS_STANDARD: 30,
+			DELAY_DAYS_SCORE: 2,
+			STORY_STANDARD: 35,
 			STORY_BASE_TIME: 0.1,
 			STORY_BASE_SCORE: 0.025,
-			BUG_CARRY_OVER_STANDARD: 30,
-			BUG_ONE_SCORE: 2,
+			BUG_CARRY_OVER_STANDARD: 25,
+			BUG_ONE_SCORE: 0.4,
 			TOP_COEFFICIENT: 1.2,
 			SECOND_COEFFICIENT: 1.0,
 			THIRD_COEFFICIENT: 0.8,
 		})
-		err := tmp.MakeRdReport("APP开发部", "研发工程师", "app-rd", "曾宪崔", "./excel/kpi-rd2-2.xlsx")
+		err := tmp.MakeAppRdReport("APP开发部", "研发工程师", "app-rd", "曾宪崔", "./excel/appkpi.xlsx")
 		if err != nil {
-			log.Fatalf("error MakeRdReport: %v", err)
+			log.Fatalf("error MakeAppRdReport: %v", err)
 		}
 	}
+	// for _, v := range app {
+	// 	tmp := rd.NewAppRdKpi(db, v, beginDatetime, endDatetime, rd.AppRdCoefficient{
+	// 		PROJECT_PROGRESS_STANDARD: 30,
+	// 		DELAY_DAYS_SCORE: 2,
+	// 		STORY_STANDARD: 35,
+	// 		STORY_BASE_TIME: 0.1,
+	// 		STORY_BASE_SCORE: 0.025,
+	// 		BUG_CARRY_OVER_STANDARD: 25,
+			
+	// 		FIRST_BUG_RATE: 0,
+	// 		SECOND_BUG_RATE: 0.1,
+	// 		THIRD_BUG_RATE: 0.2,
+	// 		FORTH_BUG_RATE: 0.3,
+	// 		FIFTH_BUG_RATE: 0.4,
+	// 		SIXTH_BUG_RATE: 0.5,
+			
+	// 		FIRST_BUG_BASE: 1.0,
+	// 		SECOND_BUG_BASE: 0.9,
+	// 		THIRD_BUG_BASE: 0.8,
+	// 		FORTH_BUG_BASE: 0.7,
+	// 		FIFTH_BUG_BASE: 0.6,
+	// 		SIXTH_BUG_BASE: 0.5,
+	// 		ZERO_BUG_BASE: 0,
+	// 	})
+	// 	err := tmp.MakeAppRdReport("APP开发部", "研发工程师", "app-rd", "曾宪崔", "./excel/appkpi.xlsx")
+	// 	if err != nil {
+	// 		log.Fatalf("error MakeRdReport: %v", err)
+	// 	}
+	// }
 
 	// 软件6部 方世文
 	embed6 := []string{

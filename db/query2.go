@@ -28,7 +28,7 @@ type (
 
 	Project struct {
 		Account   string
-		Root      int
+		Root      int   // zt_team.root is zt_project.id 项目id(可能是冲刺也可能是项目)
 		Name      string
 		Begin     *string
 		End       *string
@@ -74,6 +74,78 @@ func RdBugs(db *sql.DB, account string, endDate string) []RdBug {
 		select id, title, status, resolution from zt_bug 
 		where assignedTo='%s' and status="active" and deleted='0' and openedDate <= '%s';
 	`, account, endDate)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var res RdBug
+		err := rows.Scan(&res.BugId, &res.BugTitle, &res.BugStatus, &res.BugResolution)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+		result = append(result, res)
+	}
+	return result
+}
+
+func RdBugsApp(db *sql.DB, account string, startDate, endDate string) []RdBug {
+	result := []RdBug{}
+	sqlCmd := fmt.Sprintf(`
+		select id, title, status, resolution from zt_bug 
+		where assignedTo='%s' and status="active" and deleted='0' and openedDate >= '%s' and openedDate <= '%s';
+	`, account, startDate, endDate)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var res RdBug
+		err := rows.Scan(&res.BugId, &res.BugTitle, &res.BugStatus, &res.BugResolution)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+		result = append(result, res)
+	}
+	return result
+}
+
+func AppRdActiveBugs(db *sql.DB, account string) []RdBug {
+	result := []RdBug{}
+	sqlCmd := fmt.Sprintf(`
+		select id, title, status, resolution from zt_bug
+		where assignedTo='%s' and status='active' and deleted='0';
+	`, account)
+	rows, err := db.Query(sqlCmd)
+	if err != nil {
+		log.Fatalf("Error executing query: %v\n", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var res RdBug
+		err := rows.Scan(&res.BugId, &res.BugTitle, &res.BugStatus, &res.BugResolution)
+		if err != nil {
+			log.Fatalf("Error scanning row: %v\n", err)
+		}
+		result = append(result, res)
+	}
+	return result
+}
+
+func AppRdResolvedBugs(db *sql.DB, account string) []RdBug {
+	result := []RdBug{}
+	sqlCmd := fmt.Sprintf(`
+		select id, title, status, resolution from zt_bug
+		where resolvedBy='%s' and (status='resolved' or status='closed') and deleted='0';
+	`, account)
 	rows, err := db.Query(sqlCmd)
 	if err != nil {
 		log.Fatalf("Error executing query: %v\n", err)
