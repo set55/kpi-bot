@@ -31,6 +31,7 @@ type (
 		STORY_BASE_SCORE          float64 // 需求基础分数
 		BUG_CARRY_OVER_STANDARD   float64 // bug遗留率總分
 		BUG_ONE_SCORE             float64 // bug一个分数
+		BUG_ONE_SCORE_SEVERITY    float64 // bug一个分数(严重)
 		TOP_COEFFICIENT           float64 // 最高系数
 		SECOND_COEFFICIENT        float64 // 第二系数
 		THIRD_COEFFICIENT         float64 // 第三系数
@@ -54,17 +55,16 @@ type (
 		AccountName   string
 		Coefficient   float64
 
-
 		// App use
 		AppAverageBugRate float64 // app用平均bug率
 	}
 
 	ProjectData struct {
-		Root      int
-		Name      string
-		RealEnd   *string
-		End       *string
-		DelayDays int
+		Root       int
+		Name       string
+		RealEnd    *string
+		End        *string
+		DelayDays  int
 		AppBugRate float64 // app用bug率
 	}
 
@@ -82,6 +82,7 @@ type (
 		BugStatus     string
 		BugResolution string
 		ProjectId     int
+		BugSeverity   int // bug严重程度
 	}
 )
 
@@ -186,6 +187,7 @@ func (l *RdKpi2) GetRdKpiGrade2() (result RdKpiResult2) {
 			BugTitle:      bug.BugTitle,
 			BugStatus:     bug.BugStatus,
 			BugResolution: bug.BugResolution,
+			BugSeverity:   bug.BugSeverity,
 		})
 		deleteBugScore += l.Coefficient.BUG_ONE_SCORE
 	}
@@ -284,6 +286,8 @@ func (l *RdKpi2) GetRdKpiGrade2App() (result RdKpiResult2) {
 	// bug遗留率
 	bugs := dbQuery.RdBugsApp(l.Db, l.Account, l.StartTime, l.EndTime)
 	deleteBugScore := 0.0
+	seriousBugCount := 0
+	normalBugCount := 0
 	for _, bug := range bugs {
 		// result.BugDetail += fmt.Sprintf("bug id: %d, bug标题: %s, bug状态: %s, bug解决情况: %s\n\n", bug.BugId, bug.BugTitle, bug.BugStatus, bug.BugResolution)
 		result.BugDatas = append(result.BugDatas, BugData{
@@ -291,10 +295,17 @@ func (l *RdKpi2) GetRdKpiGrade2App() (result RdKpiResult2) {
 			BugTitle:      bug.BugTitle,
 			BugStatus:     bug.BugStatus,
 			BugResolution: bug.BugResolution,
+			BugSeverity:   bug.BugSeverity,
 		})
-		deleteBugScore += l.Coefficient.BUG_ONE_SCORE
+		if bug.BugSeverity >= dbQuery.BugSeverity3 {
+			normalBugCount++
+			deleteBugScore += l.Coefficient.BUG_ONE_SCORE
+		} else {
+			seriousBugCount++
+			deleteBugScore += l.Coefficient.BUG_ONE_SCORE_SEVERITY
+		}
 	}
-	result.BugDetail = fmt.Sprintf("总bug数: %d\n\n", len(bugs))
+	result.BugDetail = fmt.Sprintf("总bug数: %d\n\n 普通bug数: %d\n\n 严重bug数: %d\n\n", len(bugs), normalBugCount, seriousBugCount)
 	result.BugGrade = l.Coefficient.BUG_CARRY_OVER_STANDARD - deleteBugScore
 	if result.BugGrade < 0 {
 		result.BugGrade = 0
@@ -363,7 +374,7 @@ func (l *RdKpi2) MakeRdReport(department, career, dir, boss, path string) error 
 	// Sheet1 G11. 绩效基数
 	f.SetCellValue("Sheet1", "G11", data.Coefficient)
 
-	// Rename Sheet1 
+	// Rename Sheet1
 	err = f.SetSheetName("Sheet1", fmt.Sprintf("%s-%s岗%v年%v月绩效考核表", department, career, year, int(month)))
 	if err != nil {
 		return fmt.Errorf("set sheet1 name fail: %v", err)
@@ -511,7 +522,7 @@ func (l *RdKpi2) MakeAppRdReport(department, career, dir, boss, path string) err
 	// Sheet1 G11. 绩效基数
 	// f.SetCellValue("Sheet1", "G11", data.Coefficient)
 
-	// Rename Sheet1 
+	// Rename Sheet1
 	err = f.SetSheetName("Sheet1", fmt.Sprintf("%s-%s岗%v年%v月绩效考核表", department, career, year, int(month)))
 	if err != nil {
 		return fmt.Errorf("set sheet1 name fail: %v", err)
@@ -564,15 +575,17 @@ func (l *RdKpi2) MakeAppRdReport(department, career, dir, boss, path string) err
 	rowNum++
 	f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), "Bug id")
 	f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), "Bug 标题")
-	f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), "Bug 状态")
-	f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), "Bug 解决方案")
+	f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), "Bug 严重程度")
+	f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), "Bug 状态")
+	f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), "Bug 解决方案")
 
 	for _, bug := range data.BugDatas {
 		rowNum++
 		f.SetCellValue("Sheet2", fmt.Sprintf("A%v", rowNum), bug.BugId)
 		f.SetCellValue("Sheet2", fmt.Sprintf("B%v", rowNum), bug.BugTitle)
-		f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), bug.BugStatus)
-		f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), bug.BugResolution)
+		f.SetCellValue("Sheet2", fmt.Sprintf("C%v", rowNum), bug.BugSeverity)
+		f.SetCellValue("Sheet2", fmt.Sprintf("D%v", rowNum), bug.BugStatus)
+		f.SetCellValue("Sheet2", fmt.Sprintf("E%v", rowNum), bug.BugResolution)
 	}
 
 	err = f.SetSheetName("Sheet2", fmt.Sprintf("%s-%s岗%v年%v月统计", department, career, year, int(month)))

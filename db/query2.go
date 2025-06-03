@@ -7,6 +7,13 @@ import (
 	"log"
 )
 
+const (
+	BugSeverity1 = 1 // 致命
+	BugSeverity2 = 2 // 严重
+	BugSeverity3 = 3 // 一般
+	BugSeverity4 = 4 // 轻微
+)
+
 type (
 	RdTask struct {
 		StoryId       int
@@ -24,6 +31,7 @@ type (
 		BugTitle      string
 		BugStatus     string
 		BugResolution string
+		BugSeverity  int
 	}
 
 	Project struct {
@@ -71,7 +79,7 @@ func QueryRdTasks(db *sql.DB, account, startTime, endTime string) []RdTask {
 func RdBugs(db *sql.DB, account string, endDate string) []RdBug {
 	result := []RdBug{}
 	sqlCmd := fmt.Sprintf(`
-		select id, title, status, resolution from zt_bug 
+		select id, title, status, resolution, severity from zt_bug 
 		where assignedTo='%s' and status="active" and deleted='0' and openedDate <= '%s';
 	`, account, endDate)
 	rows, err := db.Query(sqlCmd)
@@ -83,7 +91,7 @@ func RdBugs(db *sql.DB, account string, endDate string) []RdBug {
 
 	for rows.Next() {
 		var res RdBug
-		err := rows.Scan(&res.BugId, &res.BugTitle, &res.BugStatus, &res.BugResolution)
+		err := rows.Scan(&res.BugId, &res.BugTitle, &res.BugStatus, &res.BugResolution, &res.BugSeverity)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
@@ -95,9 +103,9 @@ func RdBugs(db *sql.DB, account string, endDate string) []RdBug {
 func RdBugsApp(db *sql.DB, account string, startDate, endDate string) []RdBug {
 	result := []RdBug{}
 	sqlCmd := fmt.Sprintf(`
-		select id, title, status, resolution from zt_bug 
-		where assignedTo='%s' and status="active" and deleted='0' and openedDate >= '%s' and openedDate <= '%s';
-	`, account, startDate, endDate)
+		select id, title, status, resolution, severity from zt_bug 
+		where assignedTo='%s' and status="active" and deleted='0' and ((activatedDate >= '%s' and activatedDate <= '%s') or (openedDate >= '%s' and openedDate <= '%s'));
+	`, account, startDate, endDate, startDate, endDate)
 	rows, err := db.Query(sqlCmd)
 	if err != nil {
 		log.Fatalf("Error executing query: %v\n", err)
@@ -107,7 +115,7 @@ func RdBugsApp(db *sql.DB, account string, startDate, endDate string) []RdBug {
 
 	for rows.Next() {
 		var res RdBug
-		err := rows.Scan(&res.BugId, &res.BugTitle, &res.BugStatus, &res.BugResolution)
+		err := rows.Scan(&res.BugId, &res.BugTitle, &res.BugStatus, &res.BugResolution, &res.BugSeverity)
 		if err != nil {
 			log.Fatalf("Error scanning row: %v\n", err)
 		}
