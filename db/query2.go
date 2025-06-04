@@ -104,8 +104,8 @@ func RdBugsApp(db *sql.DB, account string, startDate, endDate string) []RdBug {
 	result := []RdBug{}
 	sqlCmd := fmt.Sprintf(`
 		select id, title, status, resolution, severity from zt_bug 
-		where assignedTo='%s' and status="active" and deleted='0' and ((activatedDate >= '%s' and activatedDate <= '%s') or (openedDate >= '%s' and openedDate <= '%s'));
-	`, account, startDate, endDate, startDate, endDate)
+		where assignedTo='%s' and status="active" and deleted='0' and ((activatedDate >= '%s' and activatedDate <= '%s') or (openedDate >= '%s' and openedDate <= '%s') or (assignedDate >= '%s' and assignedDate <= '%s'));
+	`, account, startDate, endDate, startDate, endDate, startDate, endDate)
 	rows, err := db.Query(sqlCmd)
 	if err != nil {
 		log.Fatalf("Error executing query: %v\n", err)
