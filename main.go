@@ -35,20 +35,22 @@ func main() {
 
 	fmt.Println("Connected to MariaDB successfully!")
 
-	// init bot, and date range
 	// Calculate the first and last day of the previous month
-
 	now := time.Now()
 	fmt.Printf("Current time: %s\n", now.Format("2006-01-02 15:04:05"))
-	// firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-	// beginDatetime := firstOfMonth.AddDate(0, -1, 0).Format("2006-01-02 15:04:05")
-	// endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
+	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+	beginDatetime := firstOfMonth.AddDate(0, -1, 0).Format("2006-01-02 15:04:05")
+	endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
 	
-	beginDatetime := "2025-05-01 00:00:00"
-	endDatetime := "2025-05-31 23:59:59"
+	// 手动控制时间
+	// beginDatetime := "2025-05-01 00:00:00"
+	// endDatetime := "2025-05-31 23:59:59"
+	
 	fmt.Println("beginDatetime:", beginDatetime)
 	fmt.Println("endDatetime:", endDatetime)
 
+	// Initialize the bot with the database connection
+	// bot only for old kpi calculation
 	robot := bot.NewBot(db)
 
 	
@@ -170,11 +172,12 @@ func main() {
 		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
 			PROJECT_PROGRESS_STANDARD: 30,
 			DELAY_DAYS_SCORE: 2,
-			STORY_STANDARD: 35,
+			STORY_STANDARD: 30,
 			STORY_BASE_TIME: 0.1,
 			STORY_BASE_SCORE: 0.025,
-			BUG_CARRY_OVER_STANDARD: 25,
+			BUG_CARRY_OVER_STANDARD: 30,
 			BUG_ONE_SCORE: 0.4,
+			BUG_ONE_SCORE_SEVERITY: 0.6,
 			TOP_COEFFICIENT: 1.2,
 			SECOND_COEFFICIENT: 1.0,
 			THIRD_COEFFICIENT: 0.8,
