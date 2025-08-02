@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"log"
 
-	"kpi-bot/lib/rd"
+	// "kpi-bot/lib/rd"
 	// "kpi-bot/lib/test"
 
 	_ "github.com/go-sql-driver/mysql"
-	"time"
+	// "time"
 )
 
 func main() {
@@ -36,16 +36,16 @@ func main() {
 	fmt.Println("Connected to MariaDB successfully!")
 
 	// Calculate the first and last day of the previous month
-	now := time.Now()
-	fmt.Printf("Current time: %s\n", now.Format("2006-01-02 15:04:05"))
-	firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-	beginDatetime := firstOfMonth.AddDate(0, -1, 0).Format("2006-01-02 15:04:05")
-	endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
+	// now := time.Now()
+	// fmt.Printf("Current time: %s\n", now.Format("2006-01-02 15:04:05"))
+	// firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
+	// beginDatetime := firstOfMonth.AddDate(0, -1, 0).Format("2006-01-02 15:04:05")
+	// endDatetime := firstOfMonth.Add(-time.Second).Format("2006-01-02 15:04:05")
 	
 	// 手动控制时间
-	// beginDatetime := "2025-05-01 00:00:00"
-	// endDatetime := "2025-05-31 23:59:59"
-	
+	beginDatetime := "2025-07-01 00:00:00"
+	endDatetime := "2025-07-31 23:59:59"
+
 	fmt.Println("beginDatetime:", beginDatetime)
 	fmt.Println("endDatetime:", endDatetime)
 
@@ -92,42 +92,37 @@ func main() {
 
 	// 项目经理(不包含测试)
 	pmsWithoutTest := []string{"guoqiao.chen"}
-	err = robot.ProducePmKpiWithoutTestReport("./excel/kpi-pm.xlsx", beginDatetime, endDatetime, pmsWithoutTest)
+	err = robot.ProducePmKpiWithoutTestReport("./excel/kpi-pm-maoshu.xlsx", beginDatetime, endDatetime, pmsWithoutTest)
 	if err != nil {
 		log.Fatalf("error ProducePmKpiWithoutTestReport: %v", err)
 	}
 
-	// SSC RD
-	rds2 := []string{
-		"set.su", 
-		"paul.gao",
-		"justin.lee",
-		"samy.gou", 
-		"deakin.han", 
-		"xiechen", 
-		"zouyanling", 
-		"ruanbanyong", 
-		"zhouyao",
-		"liuxiaoyan",
-	}
-	for _, v := range rds2 {
-		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
-			PROJECT_PROGRESS_STANDARD: 40,
-			DELAY_DAYS_SCORE: 4,
-			STORY_STANDARD: 30,
-			STORY_BASE_TIME: 0.1,
-			STORY_BASE_SCORE: 0.025,
-			BUG_CARRY_OVER_STANDARD: 30,
-			BUG_ONE_SCORE: 2,
-			TOP_COEFFICIENT: 1.2,
-			SECOND_COEFFICIENT: 1.0,
-			THIRD_COEFFICIENT: 0.8,
-		})
-		err := tmp.MakeRdReport("软件服务中心", "研发工程师", "ssc-rd", "Set", "./excel/kpi-rd2-2.xlsx")
-		if err != nil {
-			log.Fatalf("error MakeRdReport: %v", err)
-		}
-	}
+	// // SSC RD
+	// rds2 := []string{
+	// 	"set.su", 
+	// 	"paul.gao",
+	// 	"justin.lee",
+	// 	"samy.gou", 
+	// 	"deakin.han", 
+	// }
+	// for _, v := range rds2 {
+	// 	tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
+	// 		PROJECT_PROGRESS_STANDARD: 40,
+	// 		DELAY_DAYS_SCORE: 4,
+	// 		STORY_STANDARD: 30,
+	// 		STORY_BASE_TIME: 0.1,
+	// 		STORY_BASE_SCORE: 0.025,
+	// 		BUG_CARRY_OVER_STANDARD: 30,
+	// 		BUG_ONE_SCORE: 2,
+	// 		TOP_COEFFICIENT: 1.2,
+	// 		SECOND_COEFFICIENT: 1.0,
+	// 		THIRD_COEFFICIENT: 0.8,
+	// 	})
+	// 	err := tmp.MakeRdReport("软件服务中心", "研发工程师", "ssc-rd", "Set", "./excel/kpi-rd2-2.xlsx")
+	// 	if err != nil {
+	// 		log.Fatalf("error MakeRdReport: %v", err)
+	// 	}
+	// }
 
 	// SSC TEST
 	// test2 := []string{
@@ -153,40 +148,70 @@ func main() {
 	// 	}
 	// }
 
-	// APP RD 阿崔部门 研发
-	app := []string{
-		"alan.tin",
-		"jihuaqing",
-		"liuhongtao",
-		"yuanpengfei",
-		"zengyi",
-		"chenbo",
-		"lixiaolong",
-		"jiaoxiangjie",
-		"bieji",
-		"chenqi",
-		"yuanhenghui",
-		"liusang",
-	}
-	for _, v := range app {
-		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
-			PROJECT_PROGRESS_STANDARD: 30,
-			DELAY_DAYS_SCORE: 2,
-			STORY_STANDARD: 30,
-			STORY_BASE_TIME: 0.1,
-			STORY_BASE_SCORE: 0.025,
-			BUG_CARRY_OVER_STANDARD: 30,
-			BUG_ONE_SCORE: 0.4,
-			BUG_ONE_SCORE_SEVERITY: 0.6,
-			TOP_COEFFICIENT: 1.2,
-			SECOND_COEFFICIENT: 1.0,
-			THIRD_COEFFICIENT: 0.8,
-		})
-		err := tmp.MakeAppRdReport("APP开发部", "研发工程师", "app-rd", "曾宪崔", "./excel/appkpi.xlsx")
-		if err != nil {
-			log.Fatalf("error MakeAppRdReport: %v", err)
-		}
-	}
+	// // 数智化开发部 APP RD
+	// app := []string{
+	// 	"alan.tin",
+	// 	"jihuaqing",
+	// 	"liuhongtao",
+	// 	"yuanpengfei",
+	// 	"zengyi",
+	// 	"chenbo",
+	// 	"lixiaolong",
+	// 	"jiaoxiangjie",
+	// 	"bieji",
+	// 	"chenqi",
+	// 	"yuanhenghui",
+	// 	"liusang",
+	// }
+	// for _, v := range app {
+	// 	tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
+	// 		PROJECT_PROGRESS_STANDARD: 30,
+	// 		DELAY_DAYS_SCORE: 3,
+	// 		STORY_STANDARD: 30,
+	// 		STORY_BASE_TIME: 0.1,
+	// 		STORY_BASE_SCORE: 0.022,
+	// 		BUG_CARRY_OVER_STANDARD: 30,
+	// 		BUG_ONE_SCORE: 0.5,
+	// 		BUG_ONE_SCORE_SEVERITY: 1,
+	// 		TOP_COEFFICIENT: 1.2,
+	// 		SECOND_COEFFICIENT: 1.0,
+	// 		THIRD_COEFFICIENT: 0.8,
+	// 	})
+	// 	err := tmp.MakeAppRdReport("数智化开发部", "研发工程师", "app-rd", "曾宪崔", "./excel/appkpi2.xlsx")
+	// 	if err != nil {
+	// 		log.Fatalf("error MakeAppRdReport: %v", err)
+	// 	}
+	// }
+
+	// // 数智化开发部 BACKEND RD
+	// app_backend := []string{
+	// 	"xiechen", 
+	// 	"zouyanling", 
+	// 	"ruanbanyong", 
+	// 	"zhouyao",
+	// 	"liuxiaoyan",
+	// }
+	// for _, v := range app_backend {
+	// 	tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
+	// 		PROJECT_PROGRESS_STANDARD: 35,
+	// 		DELAY_DAYS_SCORE: 3,
+	// 		STORY_STANDARD: 30,
+	// 		STORY_BASE_TIME: 0.1,
+	// 		STORY_BASE_SCORE: 0.025,
+	// 		BUG_CARRY_OVER_STANDARD: 30,
+	// 		BUG_ONE_SCORE: 0.5,
+	// 		BUG_ONE_SCORE_SEVERITY: 1,
+	// 		TOP_COEFFICIENT: 1.2,
+	// 		SECOND_COEFFICIENT: 1.0,
+	// 		THIRD_COEFFICIENT: 0.8,
+	// 	})
+	// 	err := tmp.MakeAppBackendRdReport("数智化开发部", "研发工程师", "app-backend-rd", "曾宪崔", "./excel/app-backend.xlsx")
+	// 	if err != nil {
+	// 		log.Fatalf("error MakeRdReport: %v", err)
+	// 	}
+	// }
+
+
 	// for _, v := range app {
 	// 	tmp := rd.NewAppRdKpi(db, v, beginDatetime, endDatetime, rd.AppRdCoefficient{
 	// 		PROJECT_PROGRESS_STANDARD: 30,
@@ -217,29 +242,29 @@ func main() {
 	// 	}
 	// }
 
-	// 软件6部 方世文
-	embed6 := []string{
-		"shiwen.tin",
-		"wangtuhe",
-		"chenyuanchong",
-	}
-	for _, v := range embed6 {
-		tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
-			PROJECT_PROGRESS_STANDARD: 40,
-			DELAY_DAYS_SCORE: 4,
-			STORY_STANDARD: 30,
-			STORY_BASE_TIME: 0.1,
-			STORY_BASE_SCORE: 0.025,
-			BUG_CARRY_OVER_STANDARD: 30,
-			BUG_ONE_SCORE: 2,
-			TOP_COEFFICIENT: 1.2,
-			SECOND_COEFFICIENT: 1.0,
-			THIRD_COEFFICIENT: 0.8,
-		})
-		err := tmp.MakeRdReport("软件6部", "研发工程师", "embed6-rd", "方世文", "./excel/kpi-rd2-2.xlsx")
-		if err != nil {
-			log.Fatalf("error MakeRdReport: %v", err)
-		}
-	}
+	// // 软件6部 方世文
+	// embed6 := []string{
+	// 	"shiwen.tin",
+	// 	"wangtuhe",
+	// 	"chenyuanchong",
+	// }
+	// for _, v := range embed6 {
+	// 	tmp := rd.NewRdKpi2(db, v, beginDatetime, endDatetime, rd.RdCoefficient{
+	// 		PROJECT_PROGRESS_STANDARD: 40,
+	// 		DELAY_DAYS_SCORE: 4,
+	// 		STORY_STANDARD: 30,
+	// 		STORY_BASE_TIME: 0.1,
+	// 		STORY_BASE_SCORE: 0.025,
+	// 		BUG_CARRY_OVER_STANDARD: 30,
+	// 		BUG_ONE_SCORE: 2,
+	// 		TOP_COEFFICIENT: 1.2,
+	// 		SECOND_COEFFICIENT: 1.0,
+	// 		THIRD_COEFFICIENT: 0.8,
+	// 	})
+	// 	err := tmp.MakeRdReport("软件6部", "研发工程师", "embed6-rd", "方世文", "./excel/kpi-rd2-2.xlsx")
+	// 	if err != nil {
+	// 		log.Fatalf("error MakeRdReport: %v", err)
+	// 	}
+	// }
 
 }

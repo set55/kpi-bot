@@ -359,16 +359,16 @@ func MakePmExcelWithoutTestReport(path string, data pm.PmKpiGradeWithoutTestRepo
 	month := t.Month()
 
 	// A1. 标题
-	f.SetCellValue("Sheet1", "A1", fmt.Sprintf("软件服务中心 项目经理岗(无测试报告)%v年%v月绩效考核表", year, int(month)))
+	f.SetCellValue("Sheet1", "A1", fmt.Sprintf("数智化开发部 项目经理岗%v年%v月绩效考核表", year, int(month)))
 
 	// A2. 被考评人员部门：XXXX
-	f.SetCellValue("Sheet1", "A2", "被考评人员部门：软件服务中心")
+	f.SetCellValue("Sheet1", "A2", "被考评人员部门：数智化开发部")
 
 	// E2. 被考评人员：XXXX
 	f.SetCellValue("Sheet1", "E2", fmt.Sprintf("被考评人员：%v", common.AccountToName(data.Account)))
 
 	// F2. 考评人：xxxx
-	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "Set"))
+	f.SetCellValue("Sheet1", "F2", fmt.Sprintf("考评人：%v", "曾宪崔"))
 
 	// G4. 项目进度达成率 完成情况
 	projectDetail := fmt.Sprintf("延時率：%v\n\n", data.DiffRate)

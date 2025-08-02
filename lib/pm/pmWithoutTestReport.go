@@ -309,11 +309,11 @@ func (l *PmKpiWithoutTestReport) GetPmKpiGradeWithoutTestReport() map[string]PmK
 
 // 计算得分系数
 func (l *PmKpiWithoutTestReport) GetRdKpiGradeStandardWithoutTestReport(totalGrade float64) float64 {
-	if totalGrade >= 100 {
+	if totalGrade >= 90 {
 		return TOP_COEFFICIENT
-	} else if totalGrade < 100 && totalGrade >= 80 {
+	} else if totalGrade < 90 && totalGrade >= 75 {
 		return SECOND_COEFFICIENT
-	} else if totalGrade < 80 && totalGrade >= 60 {
+	} else if totalGrade < 75 && totalGrade >= 60 {
 		return THIRD_COEFFICIENT
 	}
 	return 0

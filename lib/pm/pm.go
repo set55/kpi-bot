@@ -37,7 +37,7 @@ const (
 	// 系数
 	TOP_COEFFICIENT    = 1.2
 	SECOND_COEFFICIENT = 1.0
-	THIRD_COEFFICIENT  = 0.7
+	THIRD_COEFFICIENT  = 0.8
 )
 
 type (
